@@ -5,16 +5,17 @@ machine-agnostic, account-agnostic, repository-agnostic, and implementation-
 agnostic.
 
 The skill can be implemented by any capable LLM agent that can inspect a git
-repository, call a normal antagonistic "10th Man" review route, call Gemini CLI
-in read-only headless mode, and write or post a combined review.
+repository, call a normal antagonistic "10th Man" review route, call a second
+independent reviewer route in read-only mode, and write or post a combined
+review.
 
 ## Skill Identity
 
 Name: `eleventh-man-pr-review`
 
 Purpose: run a PR review gate that combines the normal 10th Man antagonist with
-an independent Gemini CLI antagonist. Either reviewer can block the merge.
-Fixes are re-reviewed by the full 11th Man gate, not by standalone 10th Man.
+an independent second antagonist. Either reviewer can block the merge. Fixes
+are re-reviewed by the full 11th Man gate, not by standalone 10th Man.
 
 Use this skill when the user asks for:
 
@@ -22,7 +23,8 @@ Use this skill when the user asks for:
 - a PR review gate;
 - a merge gate;
 - a re-review after PR fixes;
-- a review that should include both the usual antagonist and Gemini CLI.
+- a review that should include both the usual antagonist and a second
+  independent reviewer.
 
 Do not use this skill for standalone plan, architecture, or research dissent
 unless the user explicitly wants the PR-style 11th Man gate. The normal 10th Man
@@ -38,11 +40,11 @@ skill remains unchanged for those workflows.
   already hides that detail behind a local wrapper. Prefer local CLIs.
 - The first reviewer is the normal 10th Man antagonist. If the primary coder's
   model family is known, choose a 10th Man route from a different model family.
-- The second reviewer is Gemini CLI, run as an independent antagonist.
-- The two reviewers should see the same frozen evidence. Gemini must not simply
-  critique or summarize the 10th Man review.
+- The second reviewer is an independent antagonist route.
+- The two reviewers should see the same frozen evidence. The second reviewer
+  must not simply critique or summarize the 10th Man review.
 - A P0 or P1 finding from either reviewer blocks merge.
-- A missing verdict, failed reviewer invocation, unavailable Gemini CLI, or
+- A missing verdict, failed reviewer invocation, unavailable reviewer route, or
   unredacted secret risk blocks merge.
 - Once a PR enters this gate, fixes must be re-reviewed through the full 11th
   Man gate.
@@ -60,11 +62,11 @@ The skill should work with these inputs, using defaults when safe:
 - `head_ref`: branch or commit being reviewed. Default: current `HEAD`.
 - `pr_id`: optional PR number, URL, or platform identifier.
 - `primary_coder_family`: optional model family that authored the change, such
-  as `model_family_a`, `model_family_b`, `gemini`, or `unknown`.
+  as `model_family_a`, `model_family_b`, or `unknown`.
 - `tenth_man_route`: the host's normal antagonistic review command or agent
   route.
-- `gemini_route`: Gemini CLI command. Default: a headless read-only Gemini CLI
-  invocation available on the host.
+- `second_reviewer_route`: independent review command or agent route. Default:
+  the strongest available read-only route that is not the 10th Man route.
 - `focus`: optional risk area. Default: correctness, security, reliability,
   tests, deploy risk, and user-visible regressions.
 - `output_target`: where to write the combined review. Default: stdout; if a PR
@@ -78,7 +80,7 @@ Always produce one combined review containing:
 - exact reviewed base and head refs;
 - review focus and evidence summary;
 - 10th Man verdict and findings;
-- Gemini CLI verdict and findings;
+- second reviewer verdict and findings;
 - combined blocking findings, de-duplicated when possible;
 - required fixes for every P0/P1;
 - non-blocking P2/P3 notes;
@@ -98,7 +100,7 @@ of P0/P1 findings.
 5. Select the normal 10th Man route. If `primary_coder_family` is known, choose
    a different model family for this reviewer.
 6. Run the 10th Man antagonist on the frozen evidence.
-7. Run Gemini CLI independently on the same frozen evidence.
+7. Run the second reviewer independently on the same frozen evidence.
 8. Parse both verdicts. Missing or malformed verdicts are blocking.
 9. Combine findings. Preserve disagreement instead of smoothing it away.
 10. Mark the gate `BLOCKED` if either reviewer has P0/P1 findings or invocation
@@ -175,20 +177,21 @@ Selection rule:
 - If no differential route exists, run the strongest available 10th Man route
   and state the limitation in the combined review.
 
-### Gemini CLI Route
+### Second Reviewer Route
 
-Gemini CLI must run in read-only or plan mode when the CLI supports it. The
-implementation must prevent Gemini from editing files during review.
+The second reviewer must run in read-only or plan mode when the route supports
+it. The implementation must prevent this reviewer from editing files during
+review.
 
 Example command shape:
 
 ```bash
-gemini --approval-mode plan --prompt "<prompt>"
+<second_reviewer_command> "<prompt>"
 ```
 
-If the local Gemini CLI uses different flags, use the equivalent headless
-read-only invocation. Gemini should receive the same redacted frozen evidence as
-10th Man, not the 10th Man's conclusions.
+Use the equivalent headless read-only invocation for the chosen route. The
+second reviewer should receive the same redacted frozen evidence as 10th Man,
+not the 10th Man's conclusions.
 
 ## Verdict Rules
 
@@ -254,10 +257,10 @@ Frozen evidence:
 <redacted_frozen_evidence>
 ```
 
-### Gemini CLI Prompt
+### Second Reviewer Prompt
 
 ```text
-You are the Gemini CLI reviewer in an 11th Man PR review gate.
+You are the second independent reviewer in an 11th Man PR review gate.
 
 You are a second independent antagonist. Do not defer to another reviewer.
 
@@ -304,7 +307,7 @@ VERDICT: <GO or NOGO>
 
 <findings>
 
-### Gemini CLI Result
+### Second Reviewer Result
 
 VERDICT: <GO or NOGO>
 
@@ -333,7 +336,8 @@ An agent installing this skill should:
    sections from "Skill Identity" through "Combined Review Format" into the
    host's required skill file.
 3. Configure one variable for the normal 10th Man route.
-4. Configure one variable for Gemini CLI in read-only headless mode.
+4. Configure one variable for the second independent reviewer route in read-only
+   headless mode.
 5. Implement evidence freeze, redaction, two independent reviewer calls, verdict
    parsing, and combined output exactly as described above.
 6. Make PR creation and PR re-review wrappers call this skill instead of calling
@@ -355,8 +359,8 @@ Use a temporary repository with no private data.
 
 ## What Not To Do
 
-- Do not let Gemini see the 10th Man review before Gemini produces its own
-  verdict.
+- Do not let the second reviewer see the 10th Man review before producing its
+  own verdict.
 - Do not approve when one reviewer fails to run.
 - Do not treat "no blocking issues except..." as approval.
 - Do not silently fall back from 11th Man to standalone 10th Man.

@@ -6,7 +6,7 @@ Portable, implementation-agnostic specifications for five LLM agent skills:
 - **[expert-meeting.md](expert-meeting.md)** — the same two-expert pattern for non-code topics: strategy, product, hiring, research, architecture. Context freeze instead of evidence freeze; no implementation phase.
 - **[content-presentation.md](content-presentation.md)** — routes "show me / open / present" requests to the right surface: text editor for code and plain-text files, HTML-rendered-in-browser for data, digests, tables, and assembled reports. Includes a reusable dark-theme stylesheet.
 - **[tenth-man.md](tenth-man.md)** — a standalone antagonistic review gate for code, plans, architecture, research, operations, and release decisions, with severity-ranked findings and a hard `GO` / `NOGO` verdict.
-- **[eleventh-man-pr-review.md](eleventh-man-pr-review.md)** — a PR review gate that combines the normal differential 10th Man antagonist with an independent Gemini CLI antagonist, then requires follow-up fixes to be re-reviewed by the same full gate.
+- **[eleventh-man-pr-review.md](eleventh-man-pr-review.md)** — a PR review gate that combines the normal differential 10th Man antagonist with an independent second antagonist, then requires follow-up fixes to be re-reviewed by the same full gate.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
 
@@ -14,10 +14,10 @@ Each file is self-contained. It describes trigger conditions, inputs, outputs, w
 
 These are specifications, not implementations. They:
 
-- Avoid provider, model, account, API, or SDK assumptions unless a skill explicitly names a route as part of its contract. `eleventh-man-pr-review` intentionally requires a Gemini CLI reviewer.
+- Avoid provider, model, account, API, or SDK assumptions. Skills describe route roles and behavior contracts, not fixed vendors.
 - Do not assume a particular harness. The installation recipe in each file can be adapted to wherever that system stores skills, slash commands, prompts, or tool definitions.
 - Do not assume a particular machine, operating system, or path layout. Output directories and open-commands are defaults, not requirements.
-- Require only local shell access and whatever CLI or wrapper the host uses to call an LLM (for example `claude -p`, `codex exec`, `ollama run`, or a local model-server wrapper).
+- Require only local shell access and whatever CLI or wrapper the host uses to call an LLM.
 
 The two-expert specs explicitly call for two genuinely different LLMs — ideally different families, vendors, or training pipelines — so the panel benefits from cross-model disagreement. Fallbacks for single-model setups are documented.
 
@@ -27,7 +27,7 @@ Two ways.
 
 ### 1. Ask a capable LLM to install the skill
 
-Paste or hand the spec to an LLM agent with file-writing access (Claude Code, Codex CLI, Cursor, a coding agent, or anything equivalent) and ask it to install the skill in your harness. The spec is written to be sufficient for that on its own:
+Paste or hand the spec to an LLM agent with file-writing access and ask it to install the skill in your harness. The spec is written to be sufficient for that on its own:
 
 > Install the skill described in `expert-meeting.md` on this machine. Use this system's default LLM CLI for both expert routes. Place the skill at the harness-appropriate location.
 
@@ -45,7 +45,7 @@ They are the skills I use most often, in this order:
 2. **expert-code-review-panel** — two frontier models reviewing the same ref independently, then arguing until they converge or one of them refuses. Catches what a single-model review misses.
 3. **expert-meeting** — same idea for non-code decisions. Useful before committing to a direction, especially when the failure mode of single-model advice is overconfidence.
 4. **tenth-man** — the default standalone dissent gate: one skeptical reviewer, hard verdict, blockers first.
-5. **eleventh-man-pr-review** — a narrower merge gate for PRs where one antagonist is not enough: normal 10th Man dissent plus Gemini CLI, with fail-closed re-review rules.
+5. **eleventh-man-pr-review** — a narrower merge gate for PRs where one antagonist is not enough: normal 10th Man dissent plus a second independent reviewer, with fail-closed re-review rules.
 
 All five are designed to fail safe: no destructive actions, no deploys, no external messages, no code changes unless explicitly requested.
 
