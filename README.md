@@ -1,10 +1,11 @@
 # agent-skills
 
-Portable, implementation-agnostic specifications for four LLM agent skills:
+Portable, implementation-agnostic specifications for five LLM agent skills:
 
 - **[expert-code-review-panel.md](expert-code-review-panel.md)** — a two-expert code review panel with evidence freeze, adversarial critique, alternating discussion rounds, convergence rule, optional implementation, and verification.
 - **[expert-meeting.md](expert-meeting.md)** — the same two-expert pattern for non-code topics: strategy, product, hiring, research, architecture. Context freeze instead of evidence freeze; no implementation phase.
 - **[content-presentation.md](content-presentation.md)** — routes "show me / open / present" requests to the right surface: text editor for code and plain-text files, HTML-rendered-in-browser for data, digests, tables, and assembled reports. Includes a reusable dark-theme stylesheet.
+- **[tenth-man.md](tenth-man.md)** — a standalone antagonistic review gate for code, plans, architecture, research, operations, and release decisions, with severity-ranked findings and a hard `GO` / `NOGO` verdict.
 - **[eleventh-man-pr-review.md](eleventh-man-pr-review.md)** — a PR review gate that combines the normal differential 10th Man antagonist with an independent Gemini CLI antagonist, then requires follow-up fixes to be re-reviewed by the same full gate.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
@@ -36,16 +37,17 @@ The LLM will create the skill file, wire up the runner, and (if the spec's smoke
 
 Each file is structured for a human reader. The prompt templates are verbatim. The workflow is numbered. The artifact layout is explicit. A competent engineer can build either panel skill in a few hundred lines of shell or Python that shells out to local CLIs. The content-presentation skill is mostly a routing rule plus a stylesheet and needs no runtime of its own.
 
-## Why these four
+## Why these five
 
 They are the skills I use most often, in this order:
 
 1. **content-presentation** — replaces the anti-pattern of dumping large content back into the chat. The routing is binary: editor for source, browser for everything else.
 2. **expert-code-review-panel** — two frontier models reviewing the same ref independently, then arguing until they converge or one of them refuses. Catches what a single-model review misses.
 3. **expert-meeting** — same idea for non-code decisions. Useful before committing to a direction, especially when the failure mode of single-model advice is overconfidence.
-4. **eleventh-man-pr-review** — a narrower merge gate for PRs where one antagonist is not enough: normal 10th Man dissent plus Gemini CLI, with fail-closed re-review rules.
+4. **tenth-man** — the default standalone dissent gate: one skeptical reviewer, hard verdict, blockers first.
+5. **eleventh-man-pr-review** — a narrower merge gate for PRs where one antagonist is not enough: normal 10th Man dissent plus Gemini CLI, with fail-closed re-review rules.
 
-All four are designed to fail safe: no destructive actions, no deploys, no external messages, no code changes unless explicitly requested.
+All five are designed to fail safe: no destructive actions, no deploys, no external messages, no code changes unless explicitly requested.
 
 ## Contributing
 
