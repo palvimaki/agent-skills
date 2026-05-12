@@ -218,19 +218,21 @@ Use `[REDACTED]` or a similarly obvious placeholder. Redaction applies to both e
 
 An LLM installing this skill on a fresh system should:
 
-1. Create a skill or prompt entry that the harness surfaces when the user requests content. On Claude Code this is `~/.claude/skills/content-presentation/SKILL.md` (or `show-content/SKILL.md` if published under the local alias). On other harnesses, use the equivalent skill, prompt, tool, or agent-config location.
+1. Create a skill or prompt entry that the harness surfaces when the user
+   requests content. Use the equivalent skill, prompt, tool, or agent-config
+   location for that harness.
 2. Ship the routing rule, the HTML template, and the open-command selection in that skill file so the agent can act on it without additional lookups.
 3. Detect the user's preferred editor and browser if that information is available (environment variables, known user preferences, or a simple config file) and record the choice. Fall back to the OS default when unknown.
 4. Optionally include a tiny shell wrapper that an LLM can invoke instead of composing the `open` command each time:
    - `show-content edit <path>` → open in the preferred editor.
    - `show-content html <path>` → open in the preferred browser.
 5. Document the skill's trigger patterns, routing rule, output conventions, and redaction requirements in the skill file so every agent behaves identically.
-6. If the system has organization-wide LLM instruction files (`CLAUDE.md`, `AGENTS.md`, or equivalent), add a short reference pointing to this skill so agents discover it without being told.
+6. If the system has organization-wide LLM instruction files, add a short
+   reference pointing to this skill so agents discover it without being told.
 
 ## Optional Backward-Compatibility Notes
 
 - The skill was first published under the alias `show-content`. Implementations may keep that alias as an internal name. The canonical generalized name is `content-presentation`.
-- On macOS the reference implementation uses CotEditor and Safari. Any editor and any browser work; CotEditor and Safari are defaults for the author but not required.
 - On systems where `/tmp` is cleared frequently, persist renders under the user's cache directory instead (`~/.cache/content-presentation/` or equivalent) if the user expects to re-open the artifact later.
 
 ## Smoke Test

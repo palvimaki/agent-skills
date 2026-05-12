@@ -433,10 +433,9 @@ Do not paste the full transcript unless the user asks for it.
 
 An LLM installing this skill on a fresh system should:
 
-1. Create a skill or prompt entry that its harness surfaces when the user asks for an expert code review. Examples:
-   - Claude Code: `~/.claude/skills/code-review-panel/SKILL.md` with YAML frontmatter (`name`, `description`).
-   - Codex CLI: `~/.codex/prompts/code-review-panel.md`.
-   - Other harnesses: the equivalent skill, prompt, tool, or agent-config location.
+1. Create a skill or prompt entry that its harness surfaces when the user asks
+   for an expert code review. Use the equivalent skill, prompt, tool, or
+   agent-config location for that harness.
 2. Implement a runner that:
    - accepts the inputs above;
    - invokes two independent LLM execution routes via whatever local CLI or wrapper is available (no SDK imports, no direct API calls);

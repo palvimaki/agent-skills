@@ -27,9 +27,9 @@ Use this skill when the user asks for:
 - a review of a plan, patch, PR, research claim, architecture, incident fix, or
   operational change.
 
-For PR workflows that explicitly require both normal 10th Man and Gemini CLI,
-use the separate `eleventh-man-pr-review` skill instead. This skill remains the
-standalone antagonist.
+For PR workflows that explicitly require both normal 10th Man and a second
+independent reviewer, use the separate `eleventh-man-pr-review` skill instead.
+This skill remains the standalone antagonist.
 
 ## Non-Negotiable Constraints
 
