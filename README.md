@@ -1,5 +1,7 @@
 # agent-skills
 
+Elevate your agentic coding (and publish your own skills!) with these powerful skills
+
 Portable, implementation-agnostic specifications for five LLM agent skills:
 
 - **[expert-code-review-panel.md](expert-code-review-panel.md)** — a two-expert code review panel with evidence freeze, adversarial critique, alternating discussion rounds, convergence rule, optional implementation, and verification.
