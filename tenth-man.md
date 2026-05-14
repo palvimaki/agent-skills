@@ -28,7 +28,7 @@ Use this skill when the user asks for:
   operational change.
 
 For PR workflows that explicitly require both normal 10th Man and a second
-independent reviewer, use the separate `eleventh-man-pr-review` skill instead.
+independent reviewer, use the separate `double-up-code-review` skill instead.
 This skill remains the standalone antagonist.
 
 ## Non-Negotiable Constraints
@@ -47,6 +47,15 @@ This skill remains the standalone antagonist.
 - Never overwrite unrelated user changes.
 - Never deploy to production from this skill.
 - Redact secrets and identifying local details before durable writes.
+
+## Timeout and Long-Running Work
+
+Antagonistic review may take longer than ordinary shell checks, especially with
+large evidence bundles, high-reasoning routes, remote queues, or constrained
+local hardware. Implementations must expose configurable timeouts, choose
+generous defaults for reviewer invocations, preserve partial output when a
+route stalls, and avoid killing a healthy reviewer just because it exceeds a
+short generic command timeout.
 
 ## Required Inputs
 

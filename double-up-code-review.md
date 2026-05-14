@@ -1,4 +1,4 @@
-# 11th Man PR Review Skill Specification
+# Double-Up Code Review Skill Specification
 
 This document defines a reusable pull request review skill. It is intentionally
 machine-agnostic, account-agnostic, repository-agnostic, and implementation-
@@ -11,24 +11,26 @@ review.
 
 ## Skill Identity
 
-Name: `eleventh-man-pr-review`
+Name: `double-up-code-review`
 
 Purpose: run a PR review gate that combines the normal 10th Man antagonist with
 an independent second antagonist. Either reviewer can block the merge. Fixes
-are re-reviewed by the full 11th Man gate, not by standalone 10th Man.
+are re-reviewed by the full Double-Up Code Review gate, not by standalone
+10th Man.
 
 Use this skill when the user asks for:
 
-- an 11th Man review;
-- a PR review gate;
-- a merge gate;
+- Double-Up Code Review;
+- a double-up review;
+- a second-reviewer PR review gate;
+- a stricter-than-10th-Man PR or merge gate;
 - a re-review after PR fixes;
 - a review that should include both the usual antagonist and a second
   independent reviewer.
 
 Do not use this skill for standalone plan, architecture, or research dissent
-unless the user explicitly wants the PR-style 11th Man gate. The normal 10th Man
-skill remains unchanged for those workflows.
+unless the user explicitly wants the PR-style Double-Up gate. The normal
+10th Man skill remains unchanged for those workflows.
 
 ## Non-Negotiable Constraints
 
@@ -46,11 +48,20 @@ skill remains unchanged for those workflows.
 - A P0 or P1 finding from either reviewer blocks merge.
 - A missing verdict, failed reviewer invocation, unavailable reviewer route, or
   unredacted secret risk blocks merge.
-- Once a PR enters this gate, fixes must be re-reviewed through the full 11th
-  Man gate.
+- Once a PR enters this gate, fixes must be re-reviewed through the full
+  Double-Up Code Review gate.
 - Never discard unrelated user changes.
 - Never deploy to production from this skill.
 - Redact secrets and local identifiers before writing durable output.
+
+## Timeout and Long-Running Work
+
+Expert review routes can be slow. Large diffs, cold local models, constrained
+hardware, remote queues, and high-reasoning settings may take much longer than
+ordinary shell commands. Implementations must expose configurable timeouts,
+choose generous defaults for expert processes, stream or record progress when
+possible, and avoid declaring a reviewer failed solely because it exceeded a
+short generic command timeout.
 
 ## Required Inputs
 
@@ -84,7 +95,8 @@ Always produce one combined review containing:
 - combined blocking findings, de-duplicated when possible;
 - required fixes for every P0/P1;
 - non-blocking P2/P3 notes;
-- explicit instruction that follow-up fixes require 11th Man re-review.
+- explicit instruction that follow-up fixes require Double-Up Code Review
+  re-review.
 
 If integrated with a PR platform, post the combined review as one comment or
 review. Request changes when blocked. Approve only when both reviewers are free
@@ -260,7 +272,7 @@ Frozen evidence:
 ### Second Reviewer Prompt
 
 ```text
-You are the second independent reviewer in an 11th Man PR review gate.
+You are the second independent reviewer in a Double-Up Code Review PR gate.
 
 You are a second independent antagonist. Do not defer to another reviewer.
 
@@ -288,7 +300,7 @@ Frozen evidence:
 ## Combined Review Format
 
 ```markdown
-## 11th Man PR Review
+## Double-Up Code Review
 
 Status: APPROVED | BLOCKED
 Base: <base_ref>
@@ -323,14 +335,15 @@ VERDICT: <GO or NOGO>
 
 ### Re-Review Rule
 
-Any fixes for this PR must be re-reviewed by the full 11th Man gate.
+Any fixes for this PR must be re-reviewed by the full Double-Up Code Review
+gate.
 ```
 
 ## Installation Recipe
 
 An agent installing this skill should:
 
-1. Create a skill or command named `eleventh-man-pr-review` in the host's normal
+1. Create a skill or command named `double-up-code-review` in the host's normal
    skill location.
 2. Store this document as the skill's primary instructions, or convert the
    sections from "Skill Identity" through "Combined Review Format" into the
@@ -349,10 +362,11 @@ An agent installing this skill should:
 Use a temporary repository with no private data.
 
 1. Create a branch with a small intentional P1 bug and a small harmless P3 nit.
-2. Run the 11th Man gate against the branch.
+2. Run the Double-Up Code Review gate against the branch.
 3. Confirm that the combined review is `BLOCKED` and includes both reviewer
    sections.
-4. Fix the P1 bug, leave or fix the P3 nit, and rerun the full 11th Man gate.
+4. Fix the P1 bug, leave or fix the P3 nit, and rerun the full Double-Up Code
+   Review gate.
 5. Confirm that approval requires both reviewers to return `VERDICT: GO`.
 6. Confirm no output includes absolute local paths, local usernames, private
    hostnames, credentials, or personal identifiers.
@@ -363,7 +377,7 @@ Use a temporary repository with no private data.
   own verdict.
 - Do not approve when one reviewer fails to run.
 - Do not treat "no blocking issues except..." as approval.
-- Do not silently fall back from 11th Man to standalone 10th Man.
+- Do not silently fall back from Double-Up Code Review to standalone 10th Man.
 - Do not include private paths or identifying details in an open-source skill
   file, examples, prompts, comments, or screenshots.
 - Do not merge on P0/P1 findings just because the other reviewer approved.
