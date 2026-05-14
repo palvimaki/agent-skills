@@ -47,6 +47,15 @@ Use this skill when the user asks to:
 - Use the style of the target public repository.
 - Commit and push only after redaction and verification pass.
 
+## Timeout and Long-Running Work
+
+Publishing can involve long-running review, redaction, rendering, test, or
+repository checks. Some expert routes may also be slow because of model choice,
+remote queues, or local hardware. Implementations must expose configurable
+timeouts, choose generous defaults for expert and verification steps, preserve
+partial output when possible, and avoid treating slow but active work as failed
+solely because it exceeds a short generic command timeout.
+
 ## Required Inputs
 
 The skill should work with these inputs:

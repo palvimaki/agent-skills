@@ -48,6 +48,15 @@ Use the expert meeting variant for strategy, research, planning, product, writin
 - Redact secrets before writing prompts, responses, transcripts, recaps, or logs.
 - Distinguish confirmed evidence from inference.
 
+## Timeout and Long-Running Work
+
+Expert panels can take a long time. Large diffs, cold local models, remote
+queues, high-reasoning settings, or slower hardware may make one expert or
+discussion round run far longer than ordinary shell commands. Implementations
+must expose configurable timeouts, set generous defaults for expert processes,
+record progress or partial output when possible, and avoid treating slow but
+active expert work as failed solely because a short generic timeout elapsed.
+
 ## Required Inputs
 
 The skill should work with these inputs, using defaults when the user does not provide them:

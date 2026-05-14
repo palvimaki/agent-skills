@@ -64,6 +64,16 @@ The installed local skill should answer:
   based on task context, tool availability, limits, latency, cost, and observed
   performance.
 
+## Timeout and Long-Running Work
+
+Route discovery, model research, and evaluation runs can take longer than
+ordinary shell commands, especially when local hardware is slow, model CLIs
+queue, or benchmark prompts use high-reasoning settings. Implementations must
+expose configurable timeouts, choose generous defaults for research and
+evaluation routes, preserve partial findings when possible, and avoid treating
+slow but active model work as failed solely because a short generic timeout
+elapsed.
+
 ## Required Inputs
 
 The skill should work with these inputs, using safe defaults:

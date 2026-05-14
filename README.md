@@ -8,7 +8,7 @@ Portable, implementation-agnostic specifications for seven LLM agent skills:
 - **[expert-meeting.md](expert-meeting.md)** — the same two-expert pattern for non-code topics: strategy, product, hiring, research, architecture. Context freeze instead of evidence freeze; no implementation phase.
 - **[content-presentation.md](content-presentation.md)** — routes "show me / open / present" requests to the right surface: text editor for code and plain-text files, HTML-rendered-in-browser for data, digests, tables, and assembled reports. Includes a reusable dark-theme stylesheet.
 - **[tenth-man.md](tenth-man.md)** — a standalone antagonistic review gate for code, plans, architecture, research, operations, and release decisions, with severity-ranked findings and a hard `GO` / `NOGO` verdict.
-- **[eleventh-man-pr-review.md](eleventh-man-pr-review.md)** — a PR review gate that combines the normal differential 10th Man antagonist with an independent second antagonist, then requires follow-up fixes to be re-reviewed by the same full gate.
+- **[double-up-code-review.md](double-up-code-review.md)** — a stricter PR review gate that combines the normal differential 10th Man antagonist with an independent second antagonist, then requires follow-up fixes to be re-reviewed by the same full gate.
 - **[model-culture-implementation-routing.md](model-culture-implementation-routing.md)** — a model-agnostic recipe for creating a local routing skill that assigns exploration, design, execution, and review phases by current model temperament and observed strengths.
 - **[skill-publish.md](skill-publish.md)** — a publication workflow for turning private/local skills into public-safe, model-agnostic skill specifications with redaction, examples, README updates, commit, and push.
 
@@ -22,6 +22,7 @@ These are specifications, not implementations. They:
 - Do not assume a particular harness. The installation recipe in each file can be adapted to wherever that system stores skills, slash commands, prompts, or tool definitions.
 - Do not assume a particular machine, operating system, or path layout. Output directories and open-commands are defaults, not requirements.
 - Require only local shell access and whatever CLI or wrapper the host uses to call an LLM.
+- Allow sufficient timeout for expert and review processes. Some models, local hardware, and larger evidence bundles can take substantially longer than ordinary shell commands; implementations should expose configurable timeouts and avoid killing a healthy long-running expert just because it is slow.
 
 The two-expert specs explicitly call for two genuinely different LLMs — ideally different families, vendors, or training pipelines — so the panel benefits from cross-model disagreement. Fallbacks for single-model setups are documented.
 
@@ -49,7 +50,7 @@ They are the skills I use most often, in this order:
 2. **expert-code-review-panel** — two frontier models reviewing the same ref independently, then arguing until they converge or one of them refuses. Catches what a single-model review misses.
 3. **expert-meeting** — same idea for non-code decisions. Useful before committing to a direction, especially when the failure mode of single-model advice is overconfidence.
 4. **tenth-man** — the default standalone dissent gate: one skeptical reviewer, hard verdict, blockers first.
-5. **eleventh-man-pr-review** — a narrower merge gate for PRs where one antagonist is not enough: normal 10th Man dissent plus a second independent reviewer, with fail-closed re-review rules.
+5. **double-up-code-review** — a narrower merge gate for PRs where one antagonist is not enough: normal 10th Man dissent plus a second independent reviewer, with fail-closed re-review rules.
 6. **model-culture-implementation-routing** — prevents stale brand-based routing by having the installer research the current local model set, then map each route to the phase where its working style creates leverage.
 7. **skill-publish** — turns useful local skills into reusable public specifications without leaking private context or freezing one user's model stack as universal.
 

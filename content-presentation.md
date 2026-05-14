@@ -25,6 +25,15 @@ Use this skill for any "show me", "see", "view", "present", "open", or "display"
 - Do not render content the user never asked to see. The skill surfaces existing or just-produced content; it does not invent, scrape, or summarize new material unless that is the user's request.
 - Strip or redact secrets from any content the skill opens or writes, including logs and assembled data.
 
+## Timeout and Long-Running Work
+
+Rendering, conversion, browser automation, OCR, and large report assembly can
+take longer than ordinary shell checks, especially on constrained hardware or
+when local browsers need to start cold. Implementations must expose configurable
+timeouts, choose generous defaults for render and verification steps, preserve
+partial artifacts when possible, and avoid aborting a healthy long-running
+process solely because it exceeds a short generic command timeout.
+
 ## Required Behavior
 
 ### Trigger

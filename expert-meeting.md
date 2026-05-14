@@ -35,6 +35,15 @@ If the topic involves a repository, branch, commit, PR, patch, or working tree, 
 - Distinguish confirmed evidence from inference.
 - Preserve dissent. A two-expert meeting that always converges is suspect.
 
+## Timeout and Long-Running Work
+
+Expert meetings can take a long time. Deep reasoning, large context bundles,
+remote queues, cold local models, or slower hardware may make an expert pass or
+discussion round run far longer than ordinary shell commands. Implementations
+must expose configurable timeouts, set generous defaults for expert processes,
+record progress or partial output when possible, and avoid treating slow but
+active expert work as failed solely because a short generic timeout elapsed.
+
 ## Required Inputs
 
 The skill should work with these inputs, using defaults when the user does not provide them:
