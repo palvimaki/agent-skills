@@ -2,7 +2,7 @@
 
 Elevate your agentic coding (and publish your own skills!) with these powerful skills
 
-Portable, implementation-agnostic specifications for seven LLM agent skills:
+Portable, implementation-agnostic specifications for eight LLM agent skills:
 
 - **[expert-code-review-panel.md](expert-code-review-panel.md)** — a two-expert code review panel with evidence freeze, adversarial critique, alternating discussion rounds, convergence rule, optional implementation, and verification.
 - **[expert-meeting.md](expert-meeting.md)** — the same two-expert pattern for non-code topics: strategy, product, hiring, research, architecture. Context freeze instead of evidence freeze; no implementation phase.
@@ -11,6 +11,7 @@ Portable, implementation-agnostic specifications for seven LLM agent skills:
 - **[double-up-code-review.md](double-up-code-review.md)** — a stricter PR review gate that combines the normal differential 10th Man antagonist with an independent second antagonist, then requires follow-up fixes to be re-reviewed by the same full gate.
 - **[model-culture-implementation-routing.md](model-culture-implementation-routing.md)** — a model-agnostic recipe for creating a local routing skill that assigns exploration, design, execution, and review phases by current model temperament and observed strengths.
 - **[skill-publish.md](skill-publish.md)** — a publication workflow for turning private/local skills into public-safe, model-agnostic skill specifications with redaction, examples, README updates, commit, and push.
+- **[file-self-destruct.md](file-self-destruct.md)** — arms a deterministic, timed, surgical self-destruct on any plaintext secret file the moment it is created or imported, using the host's native one-shot scheduler (launchd / systemd / `at`) rather than legacy cron, with traceless teardown.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
 
@@ -42,7 +43,7 @@ The LLM will create the skill file, wire up the runner, and (if the spec's smoke
 
 Each file is structured for a human reader. The prompt templates are verbatim. The workflow is numbered. The artifact layout is explicit. A competent engineer can build either panel skill in a few hundred lines of shell or Python that shells out to local CLIs. The content-presentation skill is mostly a routing rule plus a stylesheet and needs no runtime of its own.
 
-## Why these seven
+## Why these eight
 
 They are the skills I use most often, in this order:
 
@@ -53,8 +54,9 @@ They are the skills I use most often, in this order:
 5. **double-up-code-review** — a narrower merge gate for PRs where one antagonist is not enough: normal 10th Man dissent plus a second independent reviewer, with fail-closed re-review rules.
 6. **model-culture-implementation-routing** — prevents stale brand-based routing by having the installer research the current local model set, then map each route to the phase where its working style creates leverage.
 7. **skill-publish** — turns useful local skills into reusable public specifications without leaking private context or freezing one user's model stack as universal.
+8. **file-self-destruct** — makes plaintext secret files expire by construction: a deterministic, timed, single-path deletion armed the moment the file is written, on the platform-native scheduler, so a leaked credential file is never left lying around.
 
-All seven are designed to fail safe: no destructive actions, no deploys, no external messages, no code changes unless explicitly requested.
+All are designed to fail safe: no deploys, no external messages, no code changes unless explicitly requested. The single intentional exception is `file-self-destruct`, whose whole purpose is a scoped, single-path deletion of a secret file you asked to expire.
 
 ## Contributing
 
