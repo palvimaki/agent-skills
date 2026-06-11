@@ -2,7 +2,7 @@
 
 Elevate your agentic coding (and publish your own skills!) with these powerful skills
 
-Portable, implementation-agnostic specifications for eight LLM agent skills:
+Portable, implementation-agnostic specifications for nine LLM agent skills:
 
 - **[expert-code-review-panel.md](expert-code-review-panel.md)** — a two-expert code review panel with evidence freeze, adversarial critique, alternating discussion rounds, convergence rule, optional implementation, and verification.
 - **[expert-meeting.md](expert-meeting.md)** — the same two-expert pattern for non-code topics: strategy, product, hiring, research, architecture. Context freeze instead of evidence freeze; no implementation phase.
@@ -12,6 +12,7 @@ Portable, implementation-agnostic specifications for eight LLM agent skills:
 - **[model-culture-implementation-routing.md](model-culture-implementation-routing.md)** — a model-agnostic recipe for creating a local routing skill that assigns exploration, design, execution, and review phases by current model temperament and observed strengths.
 - **[skill-publish.md](skill-publish.md)** — a publication workflow for turning private/local skills into public-safe, model-agnostic skill specifications with redaction, examples, README updates, commit, and push.
 - **[file-self-destruct.md](file-self-destruct.md)** — arms a deterministic, timed, surgical self-destruct on any plaintext secret file the moment it is created or imported, using the host's native one-shot scheduler (launchd / systemd / `at`) rather than legacy cron, with traceless teardown.
+- **[mythos-reserve-routing.md](mythos-reserve-routing.md)** — a budget-aware routing protocol for builders running Claude Code + Codex CLI on consumer subscriptions: treat the frontier Claude model as a strategic reserve for hard reasoning, route all volume work to Codex GPT-5.5, keep a mandatory independent review gate on every PR, and decide inline-vs-delegate by token economics. Deliberately model-specific — the exception to this repo's model-agnostic rule.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
 
@@ -24,6 +25,8 @@ These are specifications, not implementations. They:
 - Do not assume a particular machine, operating system, or path layout. Output directories and open-commands are defaults, not requirements.
 - Require only local shell access and whatever CLI or wrapper the host uses to call an LLM.
 - Allow sufficient timeout for expert and review processes. Some models, local hardware, and larger evidence bundles can take substantially longer than ordinary shell commands; implementations should expose configurable timeouts and avoid killing a healthy long-running expert just because it is slow.
+
+One deliberate exception: `mythos-reserve-routing` names concrete models and products (Claude Code, Codex, GPT-5.5, Gemini CLI) because it targets builders in exactly that stack and that billing situation; its phase structure tells you how to adapt it as plans and models change.
 
 The two-expert specs explicitly call for two genuinely different LLMs — ideally different families, vendors, or training pipelines — so the panel benefits from cross-model disagreement. Fallbacks for single-model setups are documented.
 
@@ -43,7 +46,7 @@ The LLM will create the skill file, wire up the runner, and (if the spec's smoke
 
 Each file is structured for a human reader. The prompt templates are verbatim. The workflow is numbered. The artifact layout is explicit. A competent engineer can build either panel skill in a few hundred lines of shell or Python that shells out to local CLIs. The content-presentation skill is mostly a routing rule plus a stylesheet and needs no runtime of its own.
 
-## Why these eight
+## Why these nine
 
 They are the skills I use most often, in this order:
 
@@ -55,6 +58,7 @@ They are the skills I use most often, in this order:
 6. **model-culture-implementation-routing** — prevents stale brand-based routing by having the installer research the current local model set, then map each route to the phase where its working style creates leverage.
 7. **skill-publish** — turns useful local skills into reusable public specifications without leaking private context or freezing one user's model stack as universal.
 8. **file-self-destruct** — makes plaintext secret files expire by construction: a deterministic, timed, single-path deletion armed the moment the file is written, on the platform-native scheduler, so a leaked credential file is never left lying around.
+9. **mythos-reserve-routing** — stops the most common subscription failure mode: the frontier model burning a week's quota on work a cheaper model does identically. Expensive tokens buy thinking; cheap tokens buy doing — without ever dropping the PR review gate.
 
 All are designed to fail safe: no deploys, no external messages, no code changes unless explicitly requested. The single intentional exception is `file-self-destruct`, whose whole purpose is a scoped, single-path deletion of a secret file you asked to expire.
 
