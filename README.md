@@ -12,7 +12,7 @@ Portable, implementation-agnostic specifications for nine LLM agent skills:
 - **[model-culture-implementation-routing.md](model-culture-implementation-routing.md)** — a model-agnostic recipe for creating a local routing skill that assigns exploration, design, execution, and review phases by current model temperament and observed strengths.
 - **[skill-publish.md](skill-publish.md)** — a publication workflow for turning private/local skills into public-safe, model-agnostic skill specifications with redaction, examples, README updates, commit, and push.
 - **[file-self-destruct.md](file-self-destruct.md)** — arms a deterministic, timed, surgical self-destruct on any plaintext secret file the moment it is created or imported, using the host's native one-shot scheduler (launchd / systemd / `at`) rather than legacy cron, with traceless teardown.
-- **[mythos-reserve-routing.md](mythos-reserve-routing.md)** — a budget-aware routing protocol for builders running Claude Code + Codex CLI on consumer subscriptions: treat the frontier Claude model as a strategic reserve for hard reasoning, route all volume work to Codex GPT-5.5, keep a mandatory independent review gate on every PR, and decide inline-vs-delegate by token economics. Deliberately model-specific — the exception to this repo's model-agnostic rule.
+- **[mythos-reserve-routing.md](mythos-reserve-routing.md)** — a token-effectiveness routing protocol for getting the most out of the latest, most expensive frontier model across two frontier subscriptions: treat the "Mythos-class" model (a role, not a brand) as a strategic reserve for the reasoning only it can do, route all volume work to a capable workhorse, keep a mandatory independent review gate on every PR, and decide inline-vs-delegate by token economics. Budget optimization follows automatically — but the goal is maximum benefit per frontier token, not frugality. Uses today's Claude Code + Codex GPT-5.5 stack as the worked example and includes a self-update clause for when the landscape shifts.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
 
@@ -26,7 +26,7 @@ These are specifications, not implementations. They:
 - Require only local shell access and whatever CLI or wrapper the host uses to call an LLM.
 - Allow sufficient timeout for expert and review processes. Some models, local hardware, and larger evidence bundles can take substantially longer than ordinary shell commands; implementations should expose configurable timeouts and avoid killing a healthy long-running expert just because it is slow.
 
-One deliberate exception: `mythos-reserve-routing` names concrete models and products (Claude Code, Codex, GPT-5.5, Gemini CLI) because it targets builders in exactly that stack and that billing situation; its phase structure tells you how to adapt it as plans and models change.
+`mythos-reserve-routing` names concrete models and products (Claude Code, Codex, GPT-5.5, Gemini CLI) more freely than the other specs, but only as a worked example — the spec itself is role-based ("Mythos-class reserve", "workhorse"), and its self-update clause has your current frontier model re-derive the concrete mapping whenever subscriptions or model rankings change.
 
 The two-expert specs explicitly call for two genuinely different LLMs — ideally different families, vendors, or training pipelines — so the panel benefits from cross-model disagreement. Fallbacks for single-model setups are documented.
 
@@ -58,7 +58,7 @@ They are the skills I use most often, in this order:
 6. **model-culture-implementation-routing** — prevents stale brand-based routing by having the installer research the current local model set, then map each route to the phase where its working style creates leverage.
 7. **skill-publish** — turns useful local skills into reusable public specifications without leaking private context or freezing one user's model stack as universal.
 8. **file-self-destruct** — makes plaintext secret files expire by construction: a deterministic, timed, single-path deletion armed the moment the file is written, on the platform-native scheduler, so a leaked credential file is never left lying around.
-9. **mythos-reserve-routing** — stops the most common subscription failure mode: the frontier model burning a week's quota on work a cheaper model does identically. Expensive tokens buy thinking; cheap tokens buy doing — without ever dropping the PR review gate.
+9. **mythos-reserve-routing** — maximizes what the latest frontier model actually delivers by stopping the most common subscription failure mode: burning a week's quota on work a workhorse model does identically, then having nothing left for the problem only the frontier model can solve. Expensive tokens buy thinking; cheap tokens buy doing — without ever dropping the PR review gate.
 
 All are designed to fail safe: no deploys, no external messages, no code changes unless explicitly requested. The single intentional exception is `file-self-destruct`, whose whole purpose is a scoped, single-path deletion of a secret file you asked to expire.
 
