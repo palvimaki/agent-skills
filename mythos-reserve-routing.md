@@ -1,6 +1,6 @@
 # Mythos-Reserve Routing Skill Specification
 
-This is not a cost-cutting skill. It is a **token-effectiveness** protocol:
+This is a **token-effectiveness** protocol:
 a way to get the maximum realized benefit out of the latest, most expensive
 frontier model by spending it only where it is irreplaceable — long-horizon
 reasoning, architecture, security, hard debugging, judgment — and routing
