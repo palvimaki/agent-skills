@@ -106,6 +106,15 @@ sweeps, codebase exploration, PR review, scheduled jobs.
    artifact out.
 5. **The workhorse never escalates to the reserve on its own.** Only the
    human decides to spend reserve tokens.
+6. **Hard-switch off the quota bombs.** Harness features that loop, fan out,
+   or recurse autonomously on the reserve plan — recurring-prompt loops,
+   "ultra" multi-agent cloud reviews, autonomous workflow modes, and
+   anything similar — can eat a week's usage in one prompt. Don't rely on
+   discipline: disable them at the harness level where possible (permission
+   deny rules, uninstalled plugins, settings), so a stray invocation fails
+   instead of billing. If one of these genuinely earns its cost on a
+   Mythos-class problem, the human enables it for that run and switches it
+   back off.
 
 ## Routing Table — Example Instantiation (mid-2026)
 
@@ -228,6 +237,9 @@ Things that silently burn the reserve — audit your setup for each:
 - Plan-mode or exploration helpers that spawn reserve-family subagents
 - Habitual "let me just ask the big model" moments for questions the
   workhorse answers identically
+- Loop / ultra-review / autonomous-workflow features left enabled on the
+  reserve plan — the single biggest one-prompt quota killers; hard-disable
+  them (rule 6)
 
 ## Installation Recipe (worked example: Claude Code + Codex CLI)
 
