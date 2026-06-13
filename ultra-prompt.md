@@ -1,119 +1,123 @@
 # Ultra Prompt Skill Specification
 
 This document defines a reusable skill: **given a task, write a high-quality
-prompt for Claude Code's "Ultra\*Code" / dynamic-work\*flow feature, and pair it
-with a tailored recommendation for the configuration that runs it most
+prompt for Claude Code's Ultra-Code orchestration feature — its `ultra*code`
+effort tier and the dynamic, many-subagent runs it spawns — and pair it with a
+tailored recommendation for the configuration that runs it most
 token-efficiently.**
 
-The *subject* of this skill is deliberately product-specific — it is about one
-named feature, Claude Code's Ultra\*Code, and that specificity is the point.
-The *runner* is agent-agnostic: any capable LLM agent that can write text can
-follow this spec to produce the prompt and the configuration advice. The agent
-doing the writing does not have to be the same model that will later run the
-prompt.
+The *subject* is deliberately product-specific — it is about one named feature,
+Claude Code's Ultra-Code — and that specificity is the point. The *runner* is
+agent-agnostic: any capable LLM agent that can write text can follow this spec to
+produce the prompt and the configuration advice. The agent doing the writing does
+not have to be the model that later runs the prompt.
 
-No LLM API, SDK, or provider key is required to use this skill. It produces
-text — a prompt plus advice — that a human pastes into their own Claude Code
-session.
+No LLM API, SDK, or provider key is required. The skill produces text — a prompt
+plus advice — that a human pastes into their own Claude Code session.
 
 ## Keyword-safety convention (READ FIRST)
 
 This spec is meant to be **read** by a coding agent — Claude Code or any other —
-the way an agent reads any skill or doc it pulls from a repo or URL. Read that
-way (as file content or tool output) it triggers nothing. It is **not** meant to
-be pasted into a live prompt box.
+the way it reads any skill or doc pulled from a repo or URL. Read that way (as
+file content or tool output) it triggers nothing. It is **not** meant to be
+pasted into a live prompt box — but it is written to stay inert even if it is.
 
-Harden it for the paste case regardless. Claude Code's orchestration feature
-fires on a **bare keyword in the user's prompt**: in a live session that keyword,
-appearing anywhere in a message, makes Claude immediately plan a background run
-and can raise the session's effort tier — spending tokens before the agent has
-read a word of the instructions. So if this file were pasted verbatim into a
-running session, an un-escaped trigger term would trip it into that mode. This
-convention keeps every such term inert.
+Claude Code can arm a background run from text in the **user's prompt**. Exactly
+two classes of text matter; everything else is ordinary prose and is left alone.
 
-To keep the spec inert, **every Claude/Codex trigger term in this file is written
-with an asterisk inside it**:
+1. **Hot keywords — fire anywhere in a prompt.** There are only two: the
+   orchestration keyword (the Ultra-Code keyword) and the legacy opt-in word that
+   meant the same thing before it was renamed. This spec writes each one **only**
+   inside an inline-code span with an asterisk inside it — `` `ultra*code` `` and
+   `` `work*flow` `` — so the literal string never matches (the asterisk breaks
+   it) while the asterisk still renders literally (a code span suppresses Markdown
+   emphasis, so two of them can't pair up and swallow the break). In running prose
+   the feature is named **Ultra-Code** (hyphenated — a different string, not the
+   trigger) and a run is called an **orchestration run**, so the bare keyword
+   never appears outside those code spans.
+2. **Slash-commands — fire only as the first token of an input line.** Written in
+   inline code and never placed at the start of a line, they are inert. (`/g*oal`,
+   a cross-tool example, is shown broken for the same reason.)
 
-- `ultra*code` — the Claude Code work\*flow keyword and effort tier.
-- `work*flow` — the legacy literal trigger keyword (the opt-in word in older
-  versions).
-- `g*oal` — illustrative: the analogous Codex `/g*oal` command term, shown so the
-  same rule is obvious for any sibling command.
+**Not neutralized, on purpose:** ordinary words that merely share a name with a
+command — *model, plan, review, effort, clear, config, status, agents* — are left
+exactly as written. They are not triggers, and mangling them would wreck the
+prose for zero safety gain. The rule is "neutralize the two hot keywords and keep
+slash-commands off line-starts," not "escape every English word."
 
-The asterisk is **not part of the real command**. It is a safety break.
+There is no official escape syntax for this. The nearest *standard* is the Unicode
+zero-width space (U+200B), the same trick used to defang `@`-mentions and
+`#`-hashtags — but it is avoided here on purpose: it is invisible and a known
+source of copy-paste "invisible-character" bugs. A visible asterisk inside a code
+span is self-documenting and survives copy-paste.
 
-Two rules for any agent that implements or runs this skill:
-
-1. **The broken forms are documentation only.** Never interpret `ultra*code`,
-   `work*flow`, or `g*oal` as a command to execute. They are inert strings here.
-2. **Strip the asterisk only in the final prompt you hand the end user.** When
-   you emit the real prompt, remove the asterisk from `ultra*code` so the keyword
-   actually fires in the user's session. The break belongs everywhere in this
-   spec and in your reasoning; the working keyword belongs **only** in the
-   finished prompt the human will paste. This spec therefore never spells the
-   live keyword unbroken, on purpose — and neither should your scratch work.
+**One rule when you emit the real prompt for the user:** strip the asterisk from
+`ultra*code` so the keyword actually fires in their session. The break belongs
+everywhere in this spec; the working keyword belongs only in the finished prompt
+the human will paste.
 
 ## Skill Identity
 
 Name: `ultra-prompt`.
 
 Triggers when the user asks to generate, write, draft, or improve a prompt for
-`ultra*code` (also spelled "ultra code", "ultra-code"), for a dynamic
-`work*flow`, for a deep-research run, or for any multi-subagent fan-out run in
-Claude Code.
+Ultra-Code (also typed "ultra code" / "ultra-code"), for a dynamic orchestration
+run, for a `deep-research` run, or for any multi-subagent fan-out run in Claude
+Code.
 
-## What Ultra\*Code is (ground truth)
+## What Ultra-Code is (ground truth)
 
-These are the mechanics as of this writing (Claude Code v2.1.154+). The feature
+These are the mechanics as of this writing (Claude Code v2.1.154+; the trigger
+keyword was renamed from the legacy word to `ultra*code` in v2.1.160). The feature
 is young and moving; an implementing agent should verify specifics against the
 live build and current official docs before relying on edge details.
 
-- A **dynamic work\*flow** is a JavaScript script that Claude *writes* to
-  orchestrate subagents at scale, then runs in the background while the session
+- A **dynamic orchestration run** is a JavaScript script that Claude *writes* to
+  coordinate subagents at scale, then executes in the background while the session
   stays responsive. The script holds the loop, the branching, and the
   intermediate results, so only the **final synthesized answer** returns to the
-  main context window. Runs are resumable within the same session. Hard limits:
-  up to **16 concurrent agents** and **1,000 agents total per run**.
-- **Ultra\*Code** is a session setting that combines the highest reasoning effort
-  tier with **automatic** work\*flow orchestration: with it on, Claude decides per
-  substantive task whether to spawn a work\*flow, and one request can become
-  several work\*flows in a row (understand → change → verify). It is session-scoped,
-  resets on a new session, and is the **most expensive** mode.
-- **Two ways to trigger a work\*flow** — choosing the cheaper one is the single
-  biggest lever:
+  main context window. Runs are resumable within the same session. Hard limits: up
+  to **16 concurrent agents** and **1,000 agents total per run**.
+- **Ultra-Code** is a session setting that combines the highest reasoning effort
+  tier with **automatic** orchestration: with it on, Claude decides per
+  substantive task whether to spawn a run, and one request can become several runs
+  in a row (understand → change → verify). It is session-scoped, resets on a new
+  session, and is the **most expensive** mode.
+- **Two ways to start a run** — choosing the cheaper one is the single biggest
+  lever:
   - **Keyword, one task (preferred):** prefix the prompt with the `ultra*code`
-    keyword (asterisk stripped at emit time). Natural language such as "use a
-    work\*flow" works too. This runs **one task** as a work\*flow **without** raising
-    the whole session to the top effort tier. Cheaper.
+    keyword (asterisk stripped at emit time). A plain-language request to run it
+    as an orchestration works too. This runs **one task** as an orchestration **without**
+    raising the whole session to the top effort tier. Cheaper.
   - **Session mode:** setting the effort tier to `ultra*code` makes *every*
-    substantive task in the session a work\*flow at top effort. Use only for a
-    sustained run of genuinely hard tasks.
+    substantive task in the session a run at top effort. Use only for a sustained
+    stretch of genuinely hard tasks.
 - Cost reality: a single run can spend **more of a weekly rate limit than a full
   day of normal use**. Reasoning "effort" is a *behavioral signal*, not a hard
   token cap — on current adaptive-reasoning models there is no reliable
   "thinking-ceiling" knob (legacy fixed-thinking-budget settings apply only to
-  older model versions with adaptive reasoning explicitly disabled). The real
-  cost levers are **scope, effort tier, and per-stage model choice** — not a
-  mythical thinking cap.
+  older model versions with adaptive reasoning explicitly disabled). The real cost
+  levers are **scope, effort tier, and per-stage model choice** — not a mythical
+  thinking cap.
 
 ## When to Use / When Not To
 
 Use it for tasks that genuinely need many coordinated agents or a codified,
 re-runnable orchestration: codebase-wide audits, large multi-file migrations,
-security sweeps where completeness matters, cross-checked research, or a hard
-plan worth drafting from several independent angles.
+security sweeps where completeness matters, cross-checked research, or a hard plan
+worth drafting from several independent angles.
 
 **Trivial-task escape hatch:** if the objective is a single-file edit, a quick
 question, a naming or formatting tweak, a unit test for a known interface, or
-anything that needs mid-run human input, say that `ultra*code` is the wrong tool
-— the orchestration overhead adds latency and cost without adding quality — and
-give the one-line ordinary prompt instead.
+anything that needs mid-run human input, say that Ultra-Code is the wrong tool —
+the orchestration overhead adds latency and cost without adding quality — and give
+the one-line ordinary prompt instead.
 
 ## Inputs
 
-- The **task** the user wants the work\*flow to perform.
-- Optionally: the **target paths / scope**, the **output deliverable** they
-  want, any **model/plan constraints**, and whether this is a one-shot task or a
+- The **task** the user wants the run to perform.
+- Optionally: the **target paths / scope**, the **output deliverable** they want,
+  any **model or plan constraints**, and whether this is a one-shot task or a
   sustained session of heavy work.
 
 If scope or deliverable is missing, choose sensible defaults and state them; do
@@ -123,10 +127,10 @@ not block on the user for detail you can reasonably infer.
 
 Return exactly two clearly separated parts, **prompt first**:
 
-1. A copy-pasteable code block containing the finished `ultra*code` prompt. If it
-   should run as a single task, begin it with the keyword (asterisk stripped in
-   the real output you hand the user). Add no commentary before the block unless
-   the user asks for explanation.
+1. A copy-pasteable code block containing the finished prompt. If it should run as
+   a single task, begin it with the keyword (the `ultra*code` form with the
+   asterisk stripped in the real output you hand the user). Add no commentary
+   before the block unless the user asks for explanation.
 2. A short **Token-efficiency configuration** section: the tailored
    recommendation. This is half the deliverable — always include it.
 
@@ -134,32 +138,32 @@ Do **not** execute the task yourself. You write the brief; the user runs it.
 
 ## Core Method — writing the prompt
 
-A good `ultra*code` prompt is a **work\*flow brief**, not a chat message. Build it
-from these elements (drop what does not apply; keep the control structure):
+A good Ultra-Code prompt is an **orchestration brief**, not a chat message. Build
+it from these elements (drop what does not apply; keep the control structure):
 
 1. **Trigger + one-sentence objective.** State the single task plainly. Lead with
    the keyword for a one-shot run.
 2. **Tight scope — the #1 cost lever.** Name exact paths / globs / files / a
    bounded question. Never "the whole repo" when a directory will do. Explicitly
    fence off what NOT to touch.
-3. **Work\*flow pattern.** Name the orchestration shape (menu below) so the script
-   Claude writes matches intent instead of defaulting to a flat fan-out.
-4. **Plan-first.** Require a written phase plan / target list *before* fan-out,
-   and prefer reviewing the planned phases (or the raw script) at the approval
-   prompt before the run starts.
+3. **Orchestration pattern.** Name the shape (menu below) so the script Claude
+   writes matches intent instead of defaulting to a flat fan-out.
+4. **Plan-first.** Require a written phase plan / target list *before* fan-out, and
+   prefer reviewing the planned phases (or the raw script) at the approval prompt
+   before the run starts.
 5. **Quality gate.** Build in an adversarial review / verification phase:
    independent agents check or challenge findings, with false positives filtered
    out, before anything is reported.
 6. **Output / synthesis spec.** Say exactly where the final result goes (e.g. a
-   named markdown file), its structure, and the acceptance bar. A work\*flow returns
-   only the synthesis, so specify it precisely.
+   named markdown file), its structure, and the acceptance bar. A run returns only
+   the synthesis, so specify it precisely.
 7. **Model routing hint.** If some phases (extraction, mechanical scans) do not
-   need the strongest model, say so — every agent uses the session model unless
-   the script routes a stage down.
+   need the strongest model, say so — every agent uses the session model unless the
+   script routes a stage down.
 8. **Bounds & stop conditions.** Note expected scale, when to stop, and that the
    run must not exceed scope.
 
-## Work\*flow-pattern menu
+## Pattern menu (orchestration shapes)
 
 Pick the pattern that matches the task and name it in the prompt:
 
@@ -171,8 +175,8 @@ Pick the pattern that matches the task and name it in the prompt:
   challenge and confirm. *(security reviews, correctness-critical work)*
 - **Generate → filter** — generate many candidates, then prune or rank down.
   *(idea generation, candidate-bug lists with false-positive pruning)*
-- **Tournament (generate → judge)** — several agents attempt the same task; a
-  judge picks or merges the best. *(designs, hard plans, competing approaches)*
+- **Tournament (generate → judge)** — several agents attempt the same task; a judge
+  picks or merges the best. *(designs, hard plans, competing approaches)*
 - **Loop until done** — iterate until a condition is met. *(fix-until-tests-pass,
   refine-until-threshold)*
 
@@ -189,7 +193,7 @@ Scope (stay strictly inside this):
 - Targets: {{exact paths / globs / files / bounded question}}
 - Out of scope / do not touch: {{fences}}
 
-Work*flow shape:
+Orchestration shape:
 - Pattern: {{fan-out→synthesize | classify→act | adversarial-verification | generate→filter | tournament | loop-until-done}}
 - Plan first: produce the phase plan and the concrete target list before spawning agents; surface it for approval.
 
@@ -197,14 +201,14 @@ Phases:
 1. Analyze: {{understand the targets / build the work list}}
 2. Execute: fan out across {{unit, e.g. per-file / per-route / per-source}}; {{what each agent does}}.
 3. Verify: independent agents adversarially review the findings; drop unconfirmed / false-positive results.
-4. Synthesize: write {{output file/format}} with {{required contents}}.
+4. Synthesize: write {{output file and format}} with {{required contents}}.
 
 Model routing:
 - Use a smaller model for {{cheap phases}}; reserve the strongest model for {{judgment phases}}.
 
 Output:
-- Deliverable: {{e.g. report at docs/audit.md}}
-- Must contain: {{sections, evidence, citations/line refs}}
+- Deliverable: {{e.g. a report at docs/audit.md}}
+- Must contain: {{sections, evidence, line-reference citations}}
 - Acceptance: {{what "done" looks like}}
 ```
 
@@ -213,23 +217,23 @@ Output:
 After the prompt, recommend the cheapest setup that still clears the bar. Decide
 each line for *this* task rather than dumping defaults:
 
-- **Effort tier — biggest lever.** Default to using the **`ultra*code` keyword on
-  a single prompt at a high (not top) effort tier** — you get work\*flow
-  orchestration without forcing the top tier on every turn. Reserve session-wide
-  `ultra*code` for a sustained run of genuinely hard tasks. Many work\*flows run
-  fine at high or even medium effort; state which you recommend and why, and tell
-  the user to drop back to a normal tier the moment the heavy task is done.
+- **Effort tier — biggest lever.** Default to using the **`ultra*code` keyword on a
+  single prompt at a high (not top) effort tier** — you get the orchestration
+  without forcing the top tier on every turn. Reserve session-wide Ultra-Code for a
+  sustained stretch of genuinely hard tasks. Many runs are fine at high or even
+  medium effort; state which you recommend and why, and tell the user to drop back
+  to a normal tier the moment the heavy task is done.
 - **Scope calibration / slice-first.** Recommend running on one directory or a
   narrow question first to gauge spend before committing to the full target; the
   full run is opt-in only after the slice looks right.
 - **Per-stage model routing.** Call out which phases can use a smaller model;
   remind the user to check the active model before a large run if they normally
   switch to a cheaper one for routine work.
-- **Plan gate.** Review the planned phases (or view the raw script) at the
-  approval prompt before the run — cheaper to fix the plan than to burn a bad run.
-- **Live monitoring & stop.** Watch the work\*flow dashboard for per-agent token
-  totals; stop early without losing completed work; the concurrency and total
-  agent caps bound a runaway script.
+- **Plan gate.** Review the planned phases (or view the raw script) at the approval
+  prompt before the run — cheaper to fix the plan than to burn a bad run.
+- **Live monitoring & stop.** Watch the run dashboard for per-agent token totals;
+  stop early without losing completed work; the concurrency and total-agent caps
+  bound a runaway script.
 - **Run hygiene.** Clear context (or start a fresh session) before a heavy run so
   prior context does not compound. Pre-add the shell / web / tool commands the
   agents need to the allowlist so the run is not stalled by mid-run permission
@@ -246,34 +250,34 @@ Before returning, revise until these hold:
 
 - Is the scope genuinely tight, or did I leave a "whole-repo" loophole that will
   explode cost?
-- Did I pick a *specific* work\*flow pattern, or default to a vague fan-out?
+- Did I pick a *specific* orchestration pattern, or default to a vague fan-out?
 - Is there a plan gate and a verification phase, so a wrong turn is caught before
   fan-out and false positives are filtered before reporting?
-- Is the output deliverable named and its contents specified (the work\*flow returns
-  only the synthesis)?
+- Is the output deliverable named and its contents specified (the run returns only
+  the synthesis)?
 - Did I recommend the **cheapest** effort tier that still clears the bar —
-  keyword-on-high before session-wide `ultra*code` — and justify it?
-- Is this even worth a work\*flow, or should it be an ordinary prompt? (Invoke the
-  trivial-task escape hatch if so.)
-- **Keyword safety:** does every trigger term in my *reasoning and templates*
-  stay broken (`ultra*code`), and does the *final prompt I hand the user* strip
-  the asterisk so it actually fires? Never the reverse.
+  keyword-on-high before session-wide Ultra-Code — and justify it?
+- Is this even worth an orchestration run, or should it be an ordinary prompt?
+  (Invoke the trivial-task escape hatch if so.)
+- **Keyword safety:** in my reasoning and templates, does the literal keyword stay
+  in the broken `ultra*code` form, and does the *final prompt I hand the user*
+  strip the asterisk so it actually fires? Never the reverse.
 
 ## What NOT to Do
 
-- Do not leave a bare, unbroken trigger keyword anywhere except the final prompt
-  delivered to the user. A bare keyword in your reasoning or in this spec can trip
-  a live agent into work\*flow mode.
-- Do not ship a broken keyword (`ultra*code` with the asterisk) in the *final*
-  prompt — it will not trigger. Strip the asterisk there, and only there.
+- Do not let the bare, unbroken keyword appear anywhere except the final prompt
+  delivered to the user. In your own reasoning keep it as `ultra*code`; a bare
+  keyword can arm a run if the text reaches a live input box.
+- Do not ship the broken `ultra*code` (with the asterisk) in the *final* prompt —
+  it will not fire. Strip the asterisk there, and only there.
 - Do not execute the task; this skill writes prompts.
 - Do not recommend session-wide top-tier effort when a single keyword-triggered
   prompt at a lower tier will do.
-- Do not aim a work\*flow at an entire repository when a directory or a bounded
-  question achieves the goal.
+- Do not aim a run at an entire repository when a directory or a bounded question
+  does the job.
 - Do not invent configuration knobs (e.g. a hard "thinking ceiling") that the
-  platform does not actually expose; the real levers are scope, effort tier, and
-  per-stage model.
+  platform does not expose; the real levers are scope, effort tier, and per-stage
+  model.
 - Do not use this skill for trivial single-file or single-question tasks.
 
 ## Installation Recipe (implementation-agnostic)
@@ -282,10 +286,10 @@ An agent installing this skill on a fresh system should:
 
 1. Create the skill, prompt, or command entry at the location its harness uses to
    surface skills, and give it a description that triggers on the phrases above
-   ("prompt for ultra\*code", "dynamic work\*flow prompt", etc.).
-2. Preserve the **keyword-safety convention** verbatim — it is the part most
-   likely to be silently dropped and the part that prevents an accident when the
-   skill text is pasted into a live agent.
+   ("prompt for ultra-code", "dynamic orchestration prompt", etc.).
+2. Preserve the **keyword-safety convention** verbatim — it is the part most likely
+   to be silently dropped and the part that keeps the spec inert if its text ever
+   reaches a live input box.
 3. Keep the **two-part output contract** (prompt first, then the token-efficiency
    configuration) — both halves are required.
 4. Before relying on specific mechanics (version numbers, agent caps, the exact
@@ -297,18 +301,18 @@ An agent installing this skill on a fresh system should:
 
 ## Smoke Test
 
-Deterministic and offline; no network or live work\*flow run required:
+Deterministic and offline; no network or live run required:
 
 - **Input:** a sample task, e.g. "write a prompt to audit every API route for
   missing auth checks."
 - **Assert:** the output has two parts — a fenced prompt block first, then a
   token-efficiency configuration section.
-- **Assert (keyword safety):** every trigger term in the prose, reasoning, and
-  templates is broken (`ultra*code`), and the *delivered prompt* leads with the
-  un-broken keyword so it would fire in a real session. Neither rule is violated
-  in the other direction.
+- **Assert (keyword safety):** the bare keyword appears nowhere in the prose or
+  reasoning; the literal token shows up only as `ultra*code` inside code, and the
+  *delivered prompt* leads with the un-broken keyword so it would fire in a real
+  session. Neither rule is violated in the other direction.
 - **Assert:** the prompt names a specific scope (not "whole repo"), a specific
-  work\*flow pattern, a plan-first step, a verification phase, and a named output
-  deliverable.
+  orchestration pattern, a plan-first step, a verification phase, and a named
+  output deliverable.
 - **Assert (escape hatch):** given a trivial task ("rename one variable"), the
-  skill declines the work\*flow and returns an ordinary one-line prompt instead.
+  skill declines the run and returns an ordinary one-line prompt instead.
