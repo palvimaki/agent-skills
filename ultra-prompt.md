@@ -1,7 +1,7 @@
 # Ultra Prompt Skill Specification
 
 This document defines a reusable skill: **given a task, write a high-quality
-prompt for Claude Code's "Ultra\*Code" / dynamic-workflow feature, and pair it
+prompt for Claude Code's "Ultra\*Code" / dynamic-work\*flow feature, and pair it
 with a tailored recommendation for the configuration that runs it most
 token-efficiently.**
 
@@ -18,17 +18,23 @@ session.
 
 ## Keyword-safety convention (READ FIRST)
 
-Claude Code's workflow feature is triggered by a **bare keyword in the user's
-prompt**. In a live session, typing that keyword anywhere in a message makes
-Claude immediately plan a background workflow. So if someone pasted this
-specification verbatim into a running Claude agent, an un-escaped trigger word
-would trip the agent into workflow mode *before it ever read the instructions* —
-exactly the accident this convention prevents.
+This spec is meant to be **read** by a coding agent — Claude Code or any other —
+the way an agent reads any skill or doc it pulls from a repo or URL. Read that
+way (as file content or tool output) it triggers nothing. It is **not** meant to
+be pasted into a live prompt box.
+
+Harden it for the paste case regardless. Claude Code's orchestration feature
+fires on a **bare keyword in the user's prompt**: in a live session that keyword,
+appearing anywhere in a message, makes Claude immediately plan a background run
+and can raise the session's effort tier — spending tokens before the agent has
+read a word of the instructions. So if this file were pasted verbatim into a
+running session, an un-escaped trigger term would trip it into that mode. This
+convention keeps every such term inert.
 
 To keep the spec inert, **every Claude/Codex trigger term in this file is written
 with an asterisk inside it**:
 
-- `ultra*code` — the Claude Code workflow keyword and effort tier.
+- `ultra*code` — the Claude Code work\*flow keyword and effort tier.
 - `work*flow` — the legacy literal trigger keyword (the opt-in word in older
   versions).
 - `g*oal` — illustrative: the analogous Codex `/g*oal` command term, shown so the
@@ -69,18 +75,18 @@ live build and current official docs before relying on edge details.
   main context window. Runs are resumable within the same session. Hard limits:
   up to **16 concurrent agents** and **1,000 agents total per run**.
 - **Ultra\*Code** is a session setting that combines the highest reasoning effort
-  tier with **automatic** workflow orchestration: with it on, Claude decides per
-  substantive task whether to spawn a workflow, and one request can become
-  several workflows in a row (understand → change → verify). It is session-scoped,
+  tier with **automatic** work\*flow orchestration: with it on, Claude decides per
+  substantive task whether to spawn a work\*flow, and one request can become
+  several work\*flows in a row (understand → change → verify). It is session-scoped,
   resets on a new session, and is the **most expensive** mode.
-- **Two ways to trigger a workflow** — choosing the cheaper one is the single
+- **Two ways to trigger a work\*flow** — choosing the cheaper one is the single
   biggest lever:
   - **Keyword, one task (preferred):** prefix the prompt with the `ultra*code`
     keyword (asterisk stripped at emit time). Natural language such as "use a
-    workflow" works too. This runs **one task** as a workflow **without** raising
+    work\*flow" works too. This runs **one task** as a work\*flow **without** raising
     the whole session to the top effort tier. Cheaper.
   - **Session mode:** setting the effort tier to `ultra*code` makes *every*
-    substantive task in the session a workflow at top effort. Use only for a
+    substantive task in the session a work\*flow at top effort. Use only for a
     sustained run of genuinely hard tasks.
 - Cost reality: a single run can spend **more of a weekly rate limit than a full
   day of normal use**. Reasoning "effort" is a *behavioral signal*, not a hard
@@ -105,7 +111,7 @@ give the one-line ordinary prompt instead.
 
 ## Inputs
 
-- The **task** the user wants the workflow to perform.
+- The **task** the user wants the work\*flow to perform.
 - Optionally: the **target paths / scope**, the **output deliverable** they
   want, any **model/plan constraints**, and whether this is a one-shot task or a
   sustained session of heavy work.
@@ -128,7 +134,7 @@ Do **not** execute the task yourself. You write the brief; the user runs it.
 
 ## Core Method — writing the prompt
 
-A good `ultra*code` prompt is a **workflow brief**, not a chat message. Build it
+A good `ultra*code` prompt is a **work\*flow brief**, not a chat message. Build it
 from these elements (drop what does not apply; keep the control structure):
 
 1. **Trigger + one-sentence objective.** State the single task plainly. Lead with
@@ -136,7 +142,7 @@ from these elements (drop what does not apply; keep the control structure):
 2. **Tight scope — the #1 cost lever.** Name exact paths / globs / files / a
    bounded question. Never "the whole repo" when a directory will do. Explicitly
    fence off what NOT to touch.
-3. **Workflow pattern.** Name the orchestration shape (menu below) so the script
+3. **Work\*flow pattern.** Name the orchestration shape (menu below) so the script
    Claude writes matches intent instead of defaulting to a flat fan-out.
 4. **Plan-first.** Require a written phase plan / target list *before* fan-out,
    and prefer reviewing the planned phases (or the raw script) at the approval
@@ -145,7 +151,7 @@ from these elements (drop what does not apply; keep the control structure):
    independent agents check or challenge findings, with false positives filtered
    out, before anything is reported.
 6. **Output / synthesis spec.** Say exactly where the final result goes (e.g. a
-   named markdown file), its structure, and the acceptance bar. A workflow returns
+   named markdown file), its structure, and the acceptance bar. A work\*flow returns
    only the synthesis, so specify it precisely.
 7. **Model routing hint.** If some phases (extraction, mechanical scans) do not
    need the strongest model, say so — every agent uses the session model unless
@@ -153,7 +159,7 @@ from these elements (drop what does not apply; keep the control structure):
 8. **Bounds & stop conditions.** Note expected scale, when to stop, and that the
    run must not exceed scope.
 
-## Workflow-pattern menu
+## Work\*flow-pattern menu
 
 Pick the pattern that matches the task and name it in the prompt:
 
@@ -183,7 +189,7 @@ Scope (stay strictly inside this):
 - Targets: {{exact paths / globs / files / bounded question}}
 - Out of scope / do not touch: {{fences}}
 
-Workflow shape:
+Work*flow shape:
 - Pattern: {{fan-out→synthesize | classify→act | adversarial-verification | generate→filter | tournament | loop-until-done}}
 - Plan first: produce the phase plan and the concrete target list before spawning agents; surface it for approval.
 
@@ -208,9 +214,9 @@ After the prompt, recommend the cheapest setup that still clears the bar. Decide
 each line for *this* task rather than dumping defaults:
 
 - **Effort tier — biggest lever.** Default to using the **`ultra*code` keyword on
-  a single prompt at a high (not top) effort tier** — you get workflow
+  a single prompt at a high (not top) effort tier** — you get work\*flow
   orchestration without forcing the top tier on every turn. Reserve session-wide
-  `ultra*code` for a sustained run of genuinely hard tasks. Many workflows run
+  `ultra*code` for a sustained run of genuinely hard tasks. Many work\*flows run
   fine at high or even medium effort; state which you recommend and why, and tell
   the user to drop back to a normal tier the moment the heavy task is done.
 - **Scope calibration / slice-first.** Recommend running on one directory or a
@@ -221,7 +227,7 @@ each line for *this* task rather than dumping defaults:
   switch to a cheaper one for routine work.
 - **Plan gate.** Review the planned phases (or view the raw script) at the
   approval prompt before the run — cheaper to fix the plan than to burn a bad run.
-- **Live monitoring & stop.** Watch the workflow dashboard for per-agent token
+- **Live monitoring & stop.** Watch the work\*flow dashboard for per-agent token
   totals; stop early without losing completed work; the concurrency and total
   agent caps bound a runaway script.
 - **Run hygiene.** Clear context (or start a fresh session) before a heavy run so
@@ -240,14 +246,14 @@ Before returning, revise until these hold:
 
 - Is the scope genuinely tight, or did I leave a "whole-repo" loophole that will
   explode cost?
-- Did I pick a *specific* workflow pattern, or default to a vague fan-out?
+- Did I pick a *specific* work\*flow pattern, or default to a vague fan-out?
 - Is there a plan gate and a verification phase, so a wrong turn is caught before
   fan-out and false positives are filtered before reporting?
-- Is the output deliverable named and its contents specified (the workflow returns
+- Is the output deliverable named and its contents specified (the work\*flow returns
   only the synthesis)?
 - Did I recommend the **cheapest** effort tier that still clears the bar —
   keyword-on-high before session-wide `ultra*code` — and justify it?
-- Is this even worth a workflow, or should it be an ordinary prompt? (Invoke the
+- Is this even worth a work\*flow, or should it be an ordinary prompt? (Invoke the
   trivial-task escape hatch if so.)
 - **Keyword safety:** does every trigger term in my *reasoning and templates*
   stay broken (`ultra*code`), and does the *final prompt I hand the user* strip
@@ -257,13 +263,13 @@ Before returning, revise until these hold:
 
 - Do not leave a bare, unbroken trigger keyword anywhere except the final prompt
   delivered to the user. A bare keyword in your reasoning or in this spec can trip
-  a live agent into workflow mode.
+  a live agent into work\*flow mode.
 - Do not ship a broken keyword (`ultra*code` with the asterisk) in the *final*
   prompt — it will not trigger. Strip the asterisk there, and only there.
 - Do not execute the task; this skill writes prompts.
 - Do not recommend session-wide top-tier effort when a single keyword-triggered
   prompt at a lower tier will do.
-- Do not aim a workflow at an entire repository when a directory or a bounded
+- Do not aim a work\*flow at an entire repository when a directory or a bounded
   question achieves the goal.
 - Do not invent configuration knobs (e.g. a hard "thinking ceiling") that the
   platform does not actually expose; the real levers are scope, effort tier, and
@@ -276,7 +282,7 @@ An agent installing this skill on a fresh system should:
 
 1. Create the skill, prompt, or command entry at the location its harness uses to
    surface skills, and give it a description that triggers on the phrases above
-   ("prompt for ultra\*code", "dynamic workflow prompt", etc.).
+   ("prompt for ultra\*code", "dynamic work\*flow prompt", etc.).
 2. Preserve the **keyword-safety convention** verbatim — it is the part most
    likely to be silently dropped and the part that prevents an accident when the
    skill text is pasted into a live agent.
@@ -291,7 +297,7 @@ An agent installing this skill on a fresh system should:
 
 ## Smoke Test
 
-Deterministic and offline; no network or live workflow run required:
+Deterministic and offline; no network or live work\*flow run required:
 
 - **Input:** a sample task, e.g. "write a prompt to audit every API route for
   missing auth checks."
@@ -302,7 +308,7 @@ Deterministic and offline; no network or live workflow run required:
   un-broken keyword so it would fire in a real session. Neither rule is violated
   in the other direction.
 - **Assert:** the prompt names a specific scope (not "whole repo"), a specific
-  workflow pattern, a plan-first step, a verification phase, and a named output
+  work\*flow pattern, a plan-first step, a verification phase, and a named output
   deliverable.
 - **Assert (escape hatch):** given a trivial task ("rename one variable"), the
-  skill declines the workflow and returns an ordinary one-line prompt instead.
+  skill declines the work\*flow and returns an ordinary one-line prompt instead.
