@@ -2,7 +2,7 @@
 
 Elevate your agentic coding (and publish your own skills!) with these powerful skills
 
-Portable, implementation-agnostic specifications for ten LLM agent skills:
+Portable, implementation-agnostic specifications for eleven LLM agent skills:
 
 - **[expert-code-review-panel.md](expert-code-review-panel.md)** — a two-expert code review panel with evidence freeze, adversarial critique, alternating discussion rounds, convergence rule, optional implementation, and verification.
 - **[expert-meeting.md](expert-meeting.md)** — the same two-expert pattern for non-code topics: strategy, product, hiring, research, architecture. Context freeze instead of evidence freeze; no implementation phase.
@@ -14,6 +14,8 @@ Portable, implementation-agnostic specifications for ten LLM agent skills:
 - **[file-self-destruct.md](file-self-destruct.md)** — arms a deterministic, timed, surgical self-destruct on any plaintext secret file the moment it is created or imported, using the host's native one-shot scheduler (launchd / systemd / `at`) rather than legacy cron, with traceless teardown.
 - **[mythos-reserve-routing.md](mythos-reserve-routing.md)** — a token-effectiveness routing protocol for getting the most out of the latest, most expensive frontier model across two frontier subscriptions: treat the "Mythos-class" model (a role, not a brand) as a strategic reserve for the reasoning only it can do, route all volume work to a capable workhorse, keep a mandatory independent review gate on every PR, and decide inline-vs-delegate by token economics. Budget optimization follows automatically — but the goal is maximum benefit per frontier token, not frugality. Uses today's Claude Code + Codex GPT-5.5 stack as the worked example and includes a self-update clause for when the landscape shifts.
 - **[ultra-prompt.md](ultra-prompt.md)** — writes a best-practice prompt for Claude Code's Ultra-Code orchestration feature (its `ultra*code` effort tier and the dynamic many-subagent runs it spawns) and pairs it with a tailored token-efficiency configuration (effort tier, scope, per-stage model, run hygiene). Product-specific by design — it is *about* one named feature — but runner-agnostic: any model can follow it. Ships with a two-tier keyword-safety convention so the spec can't arm a run even if pasted into a live agent: the hot keyword appears only as `ultra*code` (an asterisk break inside a code span, never bare in prose), slash-commands are kept off line-starts, and ordinary words are left untouched. The asterisk is stripped only in the final prompt handed to the user.
+
+- **[production-pipeline.md](production-pipeline.md)** — a complete agentic development pipeline: Spec Front → Two Loops → Ship. One human thinking phase up front (a relentless one-question-at-a-time interview plus a parallel research fan-out), then an inner agentic loop that iterates to correctness (implement → two-axis code review → autonomous visual sweep → batched fix spec, max 3 sweeps) nested inside an outer human loop that iterates on *feel* only. Every finding becomes a spec before it becomes code; no review follows the operator's green light. The front-half stages are adapted from [Matt Pocock's public engineering skills](https://github.com/mattpocock/skills) (credited as upstream in the spec); the nested two-loop endgame, visual gate, re-spec phase, and label ladder are original doctrine.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
 
@@ -30,6 +32,8 @@ These are specifications, not implementations. They:
 `mythos-reserve-routing` names concrete models and products (Claude Code, Codex, GPT-5.5, Gemini CLI) more freely than the other specs, but only as a worked example — the spec itself is role-based ("Mythos-class reserve", "workhorse"), and its self-update clause has your current frontier model re-derive the concrete mapping whenever subscriptions or model rankings change.
 
 `ultra-prompt` is the one spec intentionally tied to a single product — Claude Code's Ultra-Code feature — because its whole job is to write good prompts for *that* feature. It stays portable in the only sense that matters here: any model can run it, and its mechanics section tells the installing agent to re-verify version-specific details against current docs. Its two-tier keyword-safety convention (the hot keyword broken as `ultra*code` inside a code span, slash-commands kept off line-starts, common words left alone) is deliberate, not a typo — see the spec.
+
+`production-pipeline` names one external project — [Matt Pocock's skills repo](https://github.com/mattpocock/skills) — as the credited upstream for its front-half stages, but stays fully role-based on models: every route is a placeholder the installing agent fills after local research, and the one concrete mapping in it is marked example-only.
 
 The two-expert specs explicitly call for two genuinely different LLMs — ideally different families, vendors, or training pipelines — so the panel benefits from cross-model disagreement. Fallbacks for single-model setups are documented.
 
@@ -49,7 +53,7 @@ The LLM will create the skill file, wire up the runner, and (if the spec's smoke
 
 Each file is structured for a human reader. The prompt templates are verbatim. The workflow is numbered. The artifact layout is explicit. A competent engineer can build either panel skill in a few hundred lines of shell or Python that shells out to local CLIs. The content-presentation skill is mostly a routing rule plus a stylesheet and needs no runtime of its own.
 
-## Why these ten
+## Why these eleven
 
 They are the skills I use most often, in this order:
 
@@ -63,6 +67,7 @@ They are the skills I use most often, in this order:
 8. **file-self-destruct** — makes plaintext secret files expire by construction: a deterministic, timed, single-path deletion armed the moment the file is written, on the platform-native scheduler, so a leaked credential file is never left lying around.
 9. **mythos-reserve-routing** — maximizes what the latest frontier model actually delivers by stopping the most common subscription failure mode: burning a week's quota on work a workhorse model does identically, then having nothing left for the problem only the frontier model can solve. Expensive tokens buy thinking; cheap tokens buy doing — without ever dropping the PR review gate.
 10. **ultra-prompt** — turns a task into a disciplined prompt for Claude Code's Ultra-Code runs, where the difference between a tight, scoped, plan-first brief and a vague one-liner is a 10x token swing. Always returns the prompt *plus* the cheapest configuration that still clears the bar, and ships with a keyword-safety convention so the spec itself can't arm a run even if pasted into a live agent.
+11. **production-pipeline** — the umbrella workflow the other skills serve: spec everything first, let agents iterate to correctness in a bounded inner loop with review and an autonomous visual gate inside it, and reserve the human for the two things only a human can do — the design decisions up front and the feel judgment at the end. Findings become specs before they become code, and nothing re-reviews after the operator's green light.
 
 All are designed to fail safe: no deploys, no external messages, no code changes unless explicitly requested. The single intentional exception is `file-self-destruct`, whose whole purpose is a scoped, single-path deletion of a secret file you asked to expire.
 
