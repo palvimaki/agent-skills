@@ -4,6 +4,22 @@ This document defines a reusable content presentation skill. It is intentionally
 
 The skill can be implemented by any capable LLM agent that can open files with a local application and write HTML to a temporary location. No LLM API, SDK, or provider dependency is required.
 
+> **Doctrine version: 2026-08-19.** Re-verify any product, path, or tool
+> convention in this repository against your own environment before you install.
+
+## Contract
+
+- The editor or the browser is the delivery. Do not paste the content back into
+  the chat.
+- Source, markdown, text, log, and config files already on disk go to the editor.
+  Everything else is rendered to HTML and opened in a browser.
+- Never ask which surface. The routing rule decides. When it is ambiguous,
+  render.
+- Use a fresh path per render. Never overwrite a user file.
+- A presentation the user is meant to keep also gets a durable copy. The temp
+  render is the view, not the record.
+- Redact secrets from anything opened, rendered, or written.
+
 ## Skill Identity
 
 Name: `content-presentation` (may also be published under the local alias `show-content`).
@@ -188,6 +204,11 @@ Keep the `<style>` block unchanged unless the user explicitly asks for a differe
 ## Output Conventions
 
 - Always write to a temp directory unless persistence is requested.
+- **A temp render is a view, not a record.** When the content is a deliverable —
+  a report, a research summary, a comparison, anything the user will want again
+  tomorrow — also write a copy to a durable location and say where it went.
+  Temp directories are cleaned by the operating system, by the host, and by the
+  next cleanup job; a deliverable that exists only there is already lost.
 - Name files `<slug>-YYYY-MM-DD.html` where `slug` is derived from the topic.
 - If the same slug was already used today, append a short hash or HH-MM so old renders are not overwritten.
 - When the content is regenerated from a live source, include a small footer line stating when it was rendered and where the data came from.
@@ -216,11 +237,11 @@ Use `[REDACTED]` or a similarly obvious placeholder. Redaction applies to both e
 ## Example Invocations
 
 - "show me the logs from last night" → gather logs, render HTML with expandable sections, open in browser.
-- "open founder-tools/emma-tet-ai/server.py" → open in text editor.
+- "open src/api/server.py" → open in text editor.
 - "let me see what the research agent found" → render HTML with one card per finding, open in browser.
 - "show me the diff" → open the diff file in the text editor, or render a colorized HTML if the diff is multi-file and large.
 - "present the Q1 numbers" → render HTML table in browser.
-- "view my CLAUDE.md" → open in text editor.
+- "view my agent instructions file" → open in text editor.
 - "can you see what's in the quarterly recap?" → if it is already a markdown file, open in editor; if the agent just assembled the recap, render HTML.
 
 ## Installation Recipe (implementation-agnostic)

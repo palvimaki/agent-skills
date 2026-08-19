@@ -6,6 +6,23 @@ The skill can be implemented by any capable LLM agent that can call one or more 
 
 It is the companion to the `code-review-panel` skill. The two share the same two-expert conversation pattern. The difference is that `expert-meeting` works on any non-code topic, without a repository, diff, implementation phase, or verification phase.
 
+> **Doctrine version: 2026-08-19.** Any model name, tier, or effort label in
+> this repository is a worked example with a shelf life. Re-verify against
+> current documentation before you install.
+
+## Contract
+
+- Freeze the context before any expert speaks, and record who or what produced
+  the material under discussion.
+- Two experts, two genuinely different families where the stack allows, neither
+  from the family that authored the material.
+- First takes stay independent. No expert reads another's take first.
+- Preserve dissent. A meeting that always converges is not a meeting.
+- Resolve routes, identifiers, and effort from the host's routing config, never
+  from memory. Cap effort at high unless the user states a need.
+- Advice only. This skill never acts on its own conclusions.
+- Every artifact lands on a durable path before the meeting reports done.
+
 ## Skill Identity
 
 Name: `expert-meeting`
@@ -28,12 +45,23 @@ If the topic involves a repository, branch, commit, PR, patch, or working tree, 
 - Use the strongest available LLMs for the task. Frontier models are preferred for high-stakes meetings; strong local models are acceptable when that is what is available.
 - Prefer two genuinely different models for Expert A and Expert B, ideally from different model families, vendors, training pipelines, or inference stacks. The point is cross-model disagreement: different training data, post-training, tool behavior, and failure modes make the panel more valuable.
 - If two genuinely different models are not available, use two meaningfully independent execution contexts. If only one LLM is available, run two fresh independent passes with different roles and state this limitation in the recap.
-- Freeze context before asking for expert opinions.
+- Freeze context before asking for expert opinions, and record the origin of the
+  material under discussion — who or which route produced it. An expert from the
+  same family as the author of a proposal is a weaker critic of it.
+- Resolve routes, model identifiers, and effort settings from the host's
+  machine-readable routing config where one exists. Never from memory. An unknown
+  or retired identifier fails fast.
+- Cap reasoning effort at the host's normal high tier unless the user states a
+  need for a higher tier in this specific case.
+- Exclude a route from the material by hosting jurisdiction and provider data
+  policy, not by vendor reputation. Record any skip as a meeting limitation.
 - Keep the first expert takes independent. Expert B must not see Expert A's first take before producing its own first take.
 - Never act on the meeting's conclusions automatically. This skill produces advice, not actions.
 - Redact secrets before writing prompts, responses, transcripts, recaps, or logs.
 - Distinguish confirmed evidence from inference.
 - Preserve dissent. A two-expert meeting that always converges is suspect.
+- Write artifacts to a durable path. A transcript that lives only in a temporary
+  directory is a transcript the user will not have tomorrow.
 
 ## Timeout and Long-Running Work
 

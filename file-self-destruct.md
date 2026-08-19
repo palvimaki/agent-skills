@@ -9,6 +9,22 @@ Any capable LLM agent that can write a file and register a one-shot scheduled jo
 on the host can implement it. No LLM API, SDK, or provider dependency is
 required.
 
+> **Doctrine version: 2026-08-19.** Re-verify scheduler behavior on your own
+> platform before you install. This is the one skill in this repository that
+> deletes a file, so verify it rather than trusting it.
+
+## Contract
+
+- The arming step happens in the **same step** that writes the file, before any
+  report back. Deferred arming is the failure mode this skill exists to stop.
+- One explicit path. Never a glob, never a directory, never a pattern.
+- Use the platform's native one-shot scheduler, not the legacy cron daemon.
+- The shortest workable expiry. Default short, extend only for a stated reason.
+- Never echo the secret into the transcript, the log, or the job definition.
+- Never arm on the managed secret store. That store's protection is permissions
+  and encryption, not expiry.
+- The job removes itself after it fires, leaving nothing behind to fire twice.
+
 ## Skill Identity
 
 Name: `file-self-destruct`.

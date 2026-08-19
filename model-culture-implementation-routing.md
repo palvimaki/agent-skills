@@ -9,6 +9,28 @@ The skill can be implemented by any capable LLM agent that can inspect the
 host's available model routes, research current model behavior, and create or
 update a local skill, prompt, routing guide, or agent instruction file.
 
+> **Doctrine version: 2026-08-19.** Any model name in this repository is a
+> worked example with a shelf life. Re-derive the local map from current
+> documentation and observed behavior before you install.
+
+## Contract
+
+- Route by observed behavior in this environment, not by brand or benchmark
+  rank.
+- Research the current route set before writing the map. A remembered map is a
+  stale map.
+- Fill every role, not only the three creative ones: expansion, coherence,
+  execution, correctness review, security review, visual walking, wide-context
+  fallback, and research.
+- Where a machine-readable routing config exists, it is the source of truth and
+  the guide defers to it on conflict.
+- Record which routes are ineligible for which data surfaces, and why. Decide by
+  hosting jurisdiction and data policy, not by vendor reputation.
+- Review roles must be independent of the author role. That constraint outranks
+  temperament fit.
+- Re-derive the map when any family ships a major version, or when a route's
+  observed behavior stops matching its entry.
+
 ## Skill Identity
 
 Name: `model-culture-implementation-routing`
@@ -39,7 +61,12 @@ The installed local skill should answer:
 - Which available route is best for opening the search space?
 - Which available route is best for coherent direction-setting?
 - Which available route is best for concrete execution?
-- Which route should provide dissent or review?
+- Which route should provide correctness dissent or review?
+- Which route should provide the separate security review?
+- Which route can actually drive a user interface and judge what it sees?
+- Which route is the read-only fallback when a primary route fails or a very
+  large context is needed?
+- Which routes are ineligible for which data, and for what stated reason?
 - When should the active agent override the default route?
 
 ## Non-Negotiable Constraints
@@ -60,6 +87,11 @@ The installed local skill should answer:
   authority.
 - Distinguish researched facts from local judgment.
 - Keep the final local skill short enough to be used in normal agent context.
+- A route's temperament never overrides an independence rule. A reviewer must
+  not come from the author's family when an alternative exists, whatever the
+  culture map says about fit.
+- Cap reasoning effort at the host's normal high tier unless the user states a
+  need for a higher tier in that specific case.
 - The active agent owns the final routing decision and may override the guide
   based on task context, tool availability, limits, latency, cost, and observed
   performance.
@@ -197,16 +229,66 @@ direction.
 
 ### <Review Route> = Dissent / Verification
 
-Best when the task needs antagonistic review, merge gating, safety analysis,
-security review, or independent critique before committing.
+Best when the task needs antagonistic review, merge gating, correctness
+analysis, or independent critique before committing.
 
 Avoid as final authority unless the host explicitly makes this route the
 approval gate.
+
+### <Security Review Route> = Adversarial / Exploitability
+
+Best when the question is what an untrusted actor can reach: trust boundaries,
+auth bypasses, injection paths, races with a security consequence, secret
+exposure, and unsafe failure states.
+
+Keep it separate from `<Review Route>`. A single reviewer holding both scopes
+spends its attention on correctness, because correctness is easier to prove.
+This is a second review, with its own prompt and its own verdict — not one more
+bullet in the correctness prompt.
+
+Avoid for style, performance, or coverage questions. Those belong to the other
+axis.
+
+### <Visual Walker Route> = Drive and Judge a Running Surface
+
+Best when the acceptance criterion is what a user sees: walking flows in a
+running build, capturing states, and judging them against a spec.
+
+Requires real capability, not just reasoning: the route must be able to drive a
+browser or a simulator and read back what it produced. Verify the capability
+before assigning the role. Moderate reasoning effort is usually enough.
+
+### <Wide-Context Fallback Route> = Read-Only Breadth
+
+Best for an explicit whole-codebase sweep, and for staffing the **breadth or
+whole-tree** role at selection time when the preferred route is ineligible for
+that material.
+
+**Never the security axis.** Not at selection time, not as a substitute. Breadth
+is the opposite of the narrow, adversarial scope that axis needs, and assigning
+it there rebuilds the mixed checklist the two-axis split exists to remove. If no
+eligible security route exists, block and wait for a human — as
+`tenth-man.md` and `double-up-code-review.md` require.
+
+**Not a post-failure substitute.** When a blocking review axis fails to run, or
+returns an unparseable verdict, the gate fails closed — see `tenth-man.md` and
+`double-up-code-review.md`. Swapping in this route instead would answer a
+security question with a general read of the tree and return a `GO`, which
+rebuilds the mixed checklist the two-axis split exists to remove. Substituting a
+model is not a remedy for a failed gate; fixing the route or taking the block is.
+
+Constrain it: read-only, explicit request or a documented selection-time
+assignment only, and excluded from any data surface its hosting jurisdiction or
+data policy makes ineligible.
 
 ## Task Routing
 
 | Task phase | Preferred local route |
 |------------|-----------------------|
+| Review code for correctness | <Review Route>, independent of the author |
+| Review code for exploitability | <Security Review Route>, independent again |
+| Check a running user-facing build | <Visual Walker Route> |
+| Sweep a whole codebase read-only | <Wide-Context Fallback Route> |
 | Build feature | <Execution Route> |
 | Design feature | <Coherence Route> |
 | Find better feature shape | <Expansion Route>, then <Coherence Route> |
@@ -232,7 +314,9 @@ Override this guide when:
 
 - the user explicitly names a route;
 - a route is unavailable, rate-limited, too slow, or lacks required tools;
-- privacy or data policy prevents using the preferred route;
+- hosting jurisdiction, data residency, or provider data policy makes the
+  preferred route ineligible for this specific material — gate the surface, not
+  the model, and record the skip as a limitation;
 - the task is urgent and a capable execution route can complete it now;
 - local experience shows a different route is currently performing better;
 - a review or safety gate requires independence from the implementation route.
@@ -272,6 +356,22 @@ real.
 If the host does not use these models, replace them. If current research shows
 their behavior has changed, update the labels. If local tools make a different
 route better for execution, review, or exploration, use the local evidence.
+
+The example above is also deliberately incomplete: it shows three creative
+cultures and no review, security, visual, or fallback roles. A real installed
+map fills all of them. Note too that a modern stack usually has more families
+available than roles that need distinct families — that surplus is exactly what
+makes an independent security axis affordable.
+
+### Re-derivation cadence
+
+Re-derive the map when any of these happens, not on a calendar:
+
+- a family in the map ships a major version, or renames or retires a tier;
+- a route's observed behavior stops matching its entry — this is the signal that
+  matters most, and only local task history shows it;
+- a new family becomes available, or a subscription ends;
+- a data-policy or hosting change moves a route's eligibility.
 
 ## Redaction
 

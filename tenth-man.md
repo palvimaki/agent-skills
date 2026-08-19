@@ -8,6 +8,27 @@ The skill can be implemented by any capable LLM agent that can inspect the
 review target, ask one independent reviewer to challenge it, and return a
 clear `GO` or `NOGO` verdict with evidence.
 
+> **Doctrine version: 2026-08-19.** Any model name, product version, or tier
+> ladder in this repository is a worked example with a shelf life. Re-verify it
+> against current documentation before you install.
+
+## Contract
+
+- One reviewer, one gate. The first output line is `VERDICT: GO` or
+  `VERDICT: NOGO`.
+- The reviewer never comes from the author's model family when an alternative
+  exists.
+- Freeze and redact the evidence before the reviewer sees it.
+- Any P0 or P1 finding means `NOGO`, with concrete remediation.
+- A malformed, missing, or unparseable verdict is `NOGO`. It is never a pass.
+- This skill is the correctness axis. A separate security reviewer covers the
+  exploitability axis on the same frozen evidence. See "The Second Axis".
+- A revised target gets a new review. A prior `GO` never carries forward.
+- The reviewer reads and reasons. It does not edit files and never deploys.
+- A data-residency skip is a recorded limitation — but a skip that leaves a
+  required axis unstaffed is a block, never a quiet pass.
+- Resolve the reviewer route from the host's routing config, not from memory.
+
 ## Skill Identity
 
 Name: `tenth-man`
@@ -27,9 +48,47 @@ Use this skill when the user asks for:
 - a review of a plan, patch, PR, research claim, architecture, incident fix, or
   operational change.
 
-For PR workflows that explicitly require both normal 10th Man and a second
-independent reviewer, use the separate `double-up-code-review` skill instead.
-This skill remains the standalone antagonist.
+This skill is the **correctness axis** of the standard merge gate, and the
+standalone antagonist for non-PR dissent. On a PR, pair it with the security
+axis every time — see "The Second Axis" below. Use `double-up-code-review` only
+when you want a third, advisory family on top of those two axes.
+
+## The Second Axis — Security Review
+
+One reviewer with a mixed checklist does not find what a dedicated security
+reviewer finds. Security items compete with correctness items for the same
+attention budget, and correctness usually wins, because correctness is easier to
+prove and easier to write up.
+
+So a merge gate has two axes, run as two separate reviews:
+
+- **Correctness axis** — this skill. Does the change do what it claims, without
+  breaking what already worked?
+- **Security axis** — a separate reviewer, from a third model family where one
+  exists. Its scope is exploitability, trust boundaries, authentication and
+  authorization bypasses, injection and deserialization paths, races with a
+  security consequence, secret exposure, and unsafe failure states.
+
+Rules that make the second axis worth running:
+
+1. The security reviewer reads the same frozen, redacted evidence. It never
+   reads the correctness findings first. Shared conclusions destroy independence.
+2. The two reviews report separately. Do not merge the finding lists into one.
+3. A P0 or P1 on either axis blocks. Neither axis overrules the other.
+4. A required reviewer that fails for a procedural reason — wrapper error,
+   timeout, unparseable verdict — blocks. It never silently falls back to the
+   most expensive model on the stack, and it never falls back to the author.
+5. Where a route is excluded from the material by data-residency or data-policy
+   rules, record the skip as a review limitation. That skip is non-blocking
+   **unless it leaves a required axis unstaffed on a PR gate — then it is a
+   block for a human to resolve.** A skipped route is a limitation. A skipped
+   required axis is a block. Do not merge with no coverage on that axis.
+   Gate the surface, not the model: decide by where the data goes, not by vendor
+   reputation.
+
+Where only one independent route exists, run the two axes as two separate
+invocations, with two different prompts and fresh context each time, and state
+the independence limitation in the output.
 
 ## Non-Negotiable Constraints
 
@@ -38,6 +97,13 @@ This skill remains the standalone antagonist.
 - Prefer a reviewer from a different model family or execution route than the
   primary author when available. If that is not available, use the strongest
   available independent context and state the limitation.
+- Resolve the reviewer route, its model identifier, and its effort setting from
+  the host's machine-readable routing config where one exists. Never from memory
+  or habit. An unknown or retired identifier must fail fast, not fall through to
+  a default.
+- Cap reasoning effort at the host's normal high tier unless the user states a
+  need for a higher tier in this specific case. Top-tier effort overthinks each
+  step, spends the scarcest quota fastest, and rarely changes the verdict.
 - Review evidence, not vibes. Separate confirmed evidence from inference.
 - Lead with blocking findings before summary.
 - A `NOGO` verdict must include concrete remediation required for `GO`.
@@ -313,11 +379,13 @@ An agent installing this skill should:
    required skill file.
 3. Configure the reviewer route to the strongest independent model or agent
    available.
-4. Add an optional parameter for `author_route` so the implementation can choose
+4. Configure a second, independent security-review route with its own prompt,
+   and make both axes required wherever this skill is used as a merge gate.
+5. Add an optional parameter for `author_route` so the implementation can choose
    a different model family where possible.
-5. Implement evidence freeze, redaction, reviewer invocation, verdict parsing,
+6. Implement evidence freeze, redaction, reviewer invocation, verdict parsing,
    and fail-closed behavior.
-6. Make revised targets rerun the full review instead of carrying forward a
+7. Make revised targets rerun the full review instead of carrying forward a
    prior approval.
 
 ## Smoke Test Contract
@@ -332,6 +400,17 @@ Use a temporary repository or a synthetic plan with no private data.
 6. Confirm `VERDICT: GO` appears only when no P0/P1 remains.
 7. Confirm output contains no absolute local paths, local usernames, private
    hostnames, credentials, or personal identifiers.
+8. Plant a defect that is a security problem and not a correctness problem, such
+   as an injection path or an exposed secret. Run both axes. Confirm the security
+   reviewer reports it, that its findings stay in their own list, and that the
+   gate blocks.
+9. Make the security route fail on purpose. Confirm the gate blocks and does not
+   fall back to the author route or to a reserve model.
+10. Mark every security-eligible route ineligible for the material on
+    data-residency grounds, so the axis has no reviewer at all. Confirm the gate
+    is `NOGO` pending a human, rather than passing with a recorded limitation.
+    This is the case that matters most: the diffs other families must not see
+    are the diffs that most need a security review.
 
 ## What Not To Do
 

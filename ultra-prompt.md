@@ -13,7 +13,43 @@ produce the prompt and the configuration advice. The agent doing the writing doe
 not have to be the model that later runs the prompt.
 
 No LLM API, SDK, or provider key is required. The skill produces text — a prompt
-plus advice — that a human pastes into their own Claude Code session.
+plus advice — that a human pastes into their own session.
+
+> **Doctrine version: 2026-08-19.** The orchestration mechanics below were
+> written against one product at one point in its life, and that product moves
+> fast. Treat every version number, cap, and keyword as a claim to re-verify
+> against current official documentation before you rely on it.
+
+## Contract
+
+- Write the prompt. Do not run the task. The user runs it.
+- Deliver the prompt first, as one copy-pasteable block, then the
+  token-efficiency configuration. Both halves, every time.
+- Every prompt states: one objective, an exact acceptance condition, a fenced
+  scope, a named orchestration shape, a plan-before-fan-out requirement, the
+  evidence each result must carry, and a stop condition.
+- Every prompt carries a short routing block: which route runs which stage, at
+  what effort, and when to stop. See "Routing block".
+- An orchestration run is armed on the **workhorse** plan, never on a reserve
+  plan the operator keeps for interactive thinking work.
+- Recommend a plain single-agent prompt whenever the task does not need many
+  coordinated agents. Most tasks do not.
+- Keep the keyword-safety convention below, and strip the break only in the
+  final prompt handed to the user.
+
+## Scope note — one product's mechanics, any runner
+
+The orchestration mechanics documented here belong to one named product feature.
+That specificity is deliberate: the job of this skill is to write good prompts
+for *that* kind of run. Two things keep it portable:
+
+- **The runner is agent-agnostic.** Any capable agent that can write text can
+  follow this spec.
+- **The method transfers.** Objective, fenced scope, named shape, plan-first,
+  evidence rules, bounded stop condition, and an explicit routing block are what
+  make *any* multi-agent or long-horizon run behave. If your host calls its
+  feature something else, keep the method and replace the mechanics section
+  after checking that host's current documentation.
 
 ## Keyword-safety convention (READ FIRST)
 
@@ -65,12 +101,15 @@ Ultra-Code (also typed "ultra code" / "ultra-code"), for a dynamic orchestration
 run, for a `deep-research` run, or for any multi-subagent fan-out run in Claude
 Code.
 
-## What Ultra-Code is (ground truth)
+## What Ultra-Code is (ground truth, with a shelf life)
 
-These are the mechanics as of this writing (Claude Code v2.1.154+; the trigger
-keyword was renamed from the legacy word to `ultra*code` in v2.1.160). The feature
-is young and moving; an implementing agent should verify specifics against the
-live build and current official docs before relying on edge details.
+These mechanics were written against builds in the v2.1.1xx range: the trigger
+keyword was renamed from the legacy word to `ultra*code` at v2.1.160. Shipped
+builds have moved well past that, and this feature is young and moving fast.
+**Re-verify every specific below — the caps, the tier names, the two start
+paths, and the keyword itself — against the live build and current official
+docs before relying on any edge detail.** Where a detail here disagrees with the
+product's own documentation, the documentation wins and this file is stale.
 
 - A **dynamic orchestration run** is a JavaScript script that Claude *writes* to
   coordinate subagents at scale, then executes in the background while the session
@@ -162,6 +201,41 @@ it from these elements (drop what does not apply; keep the control structure):
    script routes a stage down.
 8. **Bounds & stop conditions.** Note expected scale, when to stop, and that the
    run must not exceed scope.
+9. **Routing block.** A short block the run reads back to itself, so the routing
+   decision travels with the prompt instead of living in someone's memory.
+
+## Routing block
+
+Embed a compact block in every prompt you write. It states, in the run's own
+words, the rules it must hold to. Keep it factual: state only what the host's
+routing config actually says, and never invent a model, a reviewer, or a
+capability to fill a line.
+
+```md
+RUN YOURSELF:
+- Resolve model identifiers, effort, and reviewers from the host's routing
+  config, never from memory. An unknown identifier fails fast.
+- Orchestration and review stages: the strongest workhorse rung, high effort.
+- Standard execution stages: the standard rung, medium effort; high when the
+  unit is demanding.
+- Mechanical stages (extraction, classification, boilerplate): the mechanical
+  rung, medium effort.
+- Cap effort at high unless the operator stated a need for more in this case.
+- Any code this run proposes for merge still passes both review axes:
+  correctness and security, each an independent reviewer with its own verdict.
+- Stop and report on a true human decision, a policy conflict, or a scope
+  conflict. Do not decide it inside the run.
+- Long stages get a bounded watcher and a deadline; a stall alerts rather than
+  stranding the run.
+```
+
+**Reserve-plan rule.** An orchestration run is one of the few things that can
+spend a week of quota in a single prompt. Arm it on the workhorse plan. If the
+operator keeps a metered reserve model for interactive reasoning, this feature
+must be disabled at the harness level on that plan, not merely avoided by
+discipline — see `mythos-reserve-routing.md`, hard rule 6. When the user asks
+for a run and the only available plan is the reserve, say so plainly and give
+the bounded single-agent alternative instead.
 
 ## Pattern menu (orchestration shapes)
 

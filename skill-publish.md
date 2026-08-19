@@ -9,6 +9,25 @@ The skill can be implemented by any capable LLM agent that can read a source
 skill, redact identifying material, rewrite the skill as a generic recipe, and
 publish it to the user's open-source skill repository.
 
+> **Doctrine version: 2026-08-19.** This spec now also defines the house style
+> every published spec in this repository follows: a doctrine-version line, a
+> short Contract block, role names instead of brand names, and a currency
+> check. Apply it to new publications and to refreshes of old ones.
+
+## Contract
+
+- Publish a specification, not a copy of the local skill.
+- Redact first, verify second, commit third. A failed redaction blocks the push.
+- Describe routes by role. Brand names belong only in a section marked as an
+  example.
+- Every published spec opens with a dated doctrine-version line and a Contract
+  block of about ten lines.
+- Never publish an absolute local path, hostname, username, private
+  organization or project name, wrapper command, ticket identifier, or internal
+  directive date.
+- Stop on unrelated dirty changes in the target repository.
+- Update the repository index in the same change as the new spec.
+
 ## Skill Identity
 
 Name: `skill-publish`
@@ -45,6 +64,17 @@ Use this skill when the user asks to:
 - Preserve the useful principle of the source skill while removing private
   operational detail.
 - Use the style of the target public repository.
+- Describe every route, model, and tool by the **role it plays**, not by brand.
+  Role names do not go stale, and they do not reveal whose stack the skill came
+  from. Keep brand names inside a clearly marked example section.
+- Open every published spec with a dated doctrine-version line, so a reader can
+  judge freshness without reading the git history, and with a Contract block of
+  about ten lines carrying the normative core — an installing agent should be
+  able to act correctly from the Contract alone and read the body for detail.
+- Redact internal wrapper and command names. They are private infrastructure
+  even when they contain no secret, and they tell a reader nothing portable.
+- Redact internal directive dates and decision references. "A standing rule
+  says X" is portable; a dated internal directive is a fingerprint.
 - Commit and push only after redaction and verification pass.
 
 ## Timeout and Long-Running Work
@@ -110,12 +140,14 @@ working around them.
      clarify the principle;
    - state that examples must be modified according to local findings,
      constraints, tools, limits, and observed model performance.
-8. Add a smoke test that verifies the public spec produces the intended local
+8. Add the doctrine-version line and the Contract block in the repository's
+   house style.
+9. Add a smoke test that verifies the public spec produces the intended local
    behavior without relying on private infrastructure.
-9. Scan the new artifact for identifying info and secrets.
-10. Update the target repository README or index if that is the local pattern.
-11. Review the diff.
-12. Commit and push to the public repository.
+10. Scan the new artifact for identifying info and secrets.
+11. Update the target repository README or index if that is the local pattern.
+12. Review the diff.
+13. Commit and push to the public repository.
 
 ## Model-Agnostic Rewrite Rule
 
@@ -154,7 +186,11 @@ Before publishing, scan for:
 - account IDs, emails, phone numbers, messaging IDs;
 - internal domain names or deployment targets;
 - private issue trackers, ticket IDs, PR URLs, or branch names;
-- comments that reveal non-public incidents or operations.
+- internal wrapper, script, and command names, even when they hold no secret;
+- dated internal directives, decision logs, and standing-order references;
+- comments that reveal non-public incidents or operations;
+- product names, customer names, and domain names belonging to the source
+  environment.
 
 Use placeholders such as `<user>`, `<repo>`, `<target_repo>`, `<local skill
 directory>`, `<Execution Route>`, and `[REDACTED_SECRET]`.
@@ -189,6 +225,21 @@ Does the target README or index list the new skill?
 
 Expected: yes, when the target repository maintains such an index.
 
+```text
+Does the spec open with a dated doctrine-version line and a Contract block?
+```
+
+Expected: yes. A reader must be able to judge freshness and act on the
+normative core without reading the whole file.
+
+```text
+Grep the new file for the source environment's fingerprints.
+```
+
+Expected: no hits. Check for home-directory paths, host names, user names,
+internal wrapper names, product names, ticket prefixes, and internal directive
+dates before every push.
+
 ## Publication Commands
 
 Command shapes are illustrative. Use the host's safest equivalent:
@@ -205,6 +256,23 @@ git -C "<target_repo>" push origin "<branch>"
 If the repository requires pull requests, create a branch and PR instead of
 pushing directly to the protected branch.
 
+## Currency Refresh
+
+A published spec ages in a way its author does not notice, because the local
+skill it came from keeps moving and the public copy does not. Run a refresh pass
+when any of these is true:
+
+- a local skill the repository mirrors has changed materially;
+- a model family in an example section has shipped a major version, or has
+  renamed or retired a tier named in the spec;
+- a doctrine changed — a new required gate, a new bound, a retired rule;
+- a spec pins a product version that shipped builds have long passed.
+
+A refresh pass covers: the doctrine-version line, the Contract block, the
+example sections, any pinned version numbers, and the cross-references between
+specs. Prefer converting a stale brand name to a role name over updating it to
+the newest brand name — the role will still be right next quarter.
+
 ## Failure Modes
 
 Block publication when:
@@ -213,4 +281,5 @@ Block publication when:
 - the target repo has unrelated dirty changes;
 - the public rewrite still depends on private infrastructure;
 - the model guidance is stale or presented as universal;
+- the spec has no doctrine-version line or no Contract block;
 - the agent cannot verify what will be published.

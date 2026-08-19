@@ -4,6 +4,26 @@ This document defines a reusable expert code review panel skill. It is intention
 
 The skill can be implemented by any capable LLM agent that can inspect a git repository, run shell commands on macOS or Linux, call one or more LLMs through whatever local interface is available, and write review artifacts.
 
+> **Doctrine version: 2026-08-19.** Any model name, tier, or effort label in
+> this repository is a worked example with a shelf life. Re-verify against
+> current documentation before you install.
+
+## Contract
+
+- Freeze the evidence, and freeze the **author family** with it. An unknown
+  author family is a stop condition, not a default.
+- No expert may come from the author's model family when an alternative exists.
+- Keep the first reviews independent. No expert sees another's take first.
+- Run two blocking axes on code: correctness and security, each with its own
+  scope and its own verdict, kept in separate lists.
+- Resolve every route, identifier, and effort from the host's routing config,
+  never from memory. Cap effort at high unless the user states a need.
+- A required reviewer that fails procedurally blocks. No fallback to the author's
+  family, no escalation to a reserve model.
+- Read-only by default: no edits, no merges, no deploys unless the user asks for
+  implementation.
+- Every artifact lands on a durable path before the panel reports done.
+
 ## Skill Identity
 
 Name: `code-review-panel`
@@ -39,6 +59,11 @@ Use the expert meeting variant for strategy, research, planning, product, writin
 - Do not depend on any specific LLM provider, model, account, API, product, machine, path, or subscription.
 - Use the strongest available LLMs for the task. Frontier models are preferred for high-risk reviews; strong local models are acceptable when that is what is available.
 - Prefer two genuinely different models for Expert A and Expert B, ideally from different model families, vendors, training pipelines, or inference stacks. The point is cross-model disagreement: different training data, post-training, tool behavior, and failure modes make the panel more valuable.
+- Record the **author family** at freeze time — which model, agent, or process produced the code under review. If it cannot be established, stop and ask rather than guessing: the whole value of the panel rests on the reviewers being independent of the author, and that is unprovable without this field.
+- Neither expert may come from the author's family while another family is available. This constraint outranks any preference about which model reviews best.
+- Resolve routes, model identifiers, and effort settings from the host's machine-readable routing config where one exists. Never from memory. An unknown or retired identifier fails fast rather than falling through to a default.
+- Cap reasoning effort at the host's normal high tier unless the user states a need for a higher tier in this specific case. Top tiers spend the scarcest quota fastest and rarely change a verdict.
+- Exclude a route from the material by hosting jurisdiction and provider data policy, not by vendor reputation. Record a skip as a panel limitation; if it leaves a required axis unstaffed, report a block.
 - If two genuinely different models are not available, use two meaningfully independent execution contexts. If only one LLM is available, run two fresh independent passes with different roles and state this limitation in the recap.
 - Freeze the repository evidence before asking for expert opinions.
 - Keep the first expert reviews independent. Expert B must not see Expert A's first review before producing its own first review.
@@ -64,7 +89,8 @@ The skill should work with these inputs, using defaults when the user does not p
 - `topic`: review question or goal. Default: summarize the user's request.
 - `repo`: repository path. Default: current working directory.
 - `ref`: branch, commit, PR checkout, or revision to review. Default: `HEAD`.
-- `focus`: optional path, subsystem, risk area, or review theme. Default: correctness, security, reliability, tests, and release risk.
+- `focus`: optional path, subsystem, risk area, or review theme. Default: correctness, reliability, tests, and release risk. Security has its own axis — see "The Security Axis" — and is not a bullet inside the correctness focus.
+- `author_family`: the model family, agent, or process that produced the code. Required for a code panel; an unknown value is a stop condition.
 - `rounds`: discussion round budget. Default: 3 for normal review, 10 for high-risk review.
 - `implement`: whether to apply agreed fixes. Default: false.
 - `outdir`: artifact directory. Default: a dated directory under `research/ops/expert-panels/`.
@@ -107,9 +133,31 @@ Artifacts must contain enough information to understand what was reviewed, which
 13. Write `raw.jsonl`, `discussion.md`, `recap.md`, and optional HTML artifacts.
 14. Report status, artifact paths, findings, verification, changed files, and residual risk.
 
+## The Security Axis
+
+A code panel produces two verdicts, not one.
+
+- **Correctness axis** — the two-expert panel described in this document.
+- **Security axis** — a separate reviewer, from a family used by neither the
+  author nor the panel experts where the stack allows. Its scope is
+  exploitability, trust boundaries, authentication and authorization bypasses,
+  injection and deserialization paths, races with a security consequence, secret
+  exposure, and unsafe failure states. It reads the same frozen, redacted
+  evidence and never reads the panel transcript first.
+
+Keep the two finding lists separate in the recap. A P0 or P1 on either axis
+blocks. Neither axis overrules the other, and the panel's convergence rule does
+not apply across axes — the security reviewer is not asked to agree with anyone.
+
+The reason for the separation is practical: on a mixed checklist, correctness
+findings crowd out security findings, because they are easier to demonstrate and
+easier to write up. A separate reviewer with a narrow scope does not have that
+trade to make. See `tenth-man.md` and `double-up-code-review.md`.
+
 ## Evidence Freeze
 
-Capture at least:
+Record the author family together with the refs, before any expert runs. Then
+capture at least:
 
 ```bash
 git -C "$REPO" rev-parse "$REF^{commit}"

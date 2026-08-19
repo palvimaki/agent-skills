@@ -11,6 +11,26 @@ in its operator's environment: install or adapt the constituent skills, wire
 the issue tracker, create the label vocabulary, and fill the route placeholders
 with locally researched model choices.
 
+> **Doctrine version: 2026-08-19.** Every model name, tier, and effort label in
+> this repository is a worked example with a shelf life. Re-verify against
+> current documentation before you install.
+
+## Contract
+
+- One human thinking phase up front. One human feel phase at the end. Agents
+  own everything between them.
+- Every finding becomes a written spec before it becomes code. No exceptions,
+  from any review, sweep, or feel pass.
+- Review lives inside the agentic loop, on two blocking axes — correctness and
+  security. Nothing re-reviews after the operator's green light.
+- Sweep observations are raw material, not verdicts. One triage stage verifies,
+  de-duplicates, and ranks them before they become a spec.
+- Every loop is bounded: 3 sweep iterations, 2 review fix cycles, then surface.
+- Every deliverable lands on a durable path before the run reports done.
+- The pipeline ships to a development target. Production promotion is the
+  operator's own action.
+- Resolve routes from the host's routing config, never from memory.
+
 ## Skill Identity
 
 Name: `production-pipeline`
@@ -69,6 +89,13 @@ and no review follows the operator's green light.
   before it can reach the operator, and nothing re-reviews after the
   operator's green light. The green light on an already-reviewed passing build
   is the final gate.
+- Review is **two blocking axes**, not one pass: correctness and security, each
+  its own reviewer with its own scope and its own verdict. A security concern
+  demoted to one bullet inside a correctness prompt is a security concern that
+  does not get found.
+- Work produced by a run is not done until it is **durable**. Worktrees,
+  temporary directories, and scratch paths are removed later; a deliverable
+  that lives only there is a deliverable the operator will not have tomorrow.
 - All iteration is bounded. The sweep loop runs at most 3 iterations before
   stopping and surfacing what still fails. Review fix cycles run at most 2
   iterations before returning to spec or architecture. Nothing loops
@@ -88,10 +115,10 @@ SPEC FRONT — the grill is the operator's; the rest is agents
 │                                                                         │
 │  ┌── INNER AGENTIC LOOP — no stops, no operator; review lives here ──┐  │
 │  │                                                                   │  │
-│  │   /implement ──▶ /code-review ──▶ visual sweep ──▶ fix spec ──┐   │  │
+│  │   /implement ─▶ review ×2 axes ─▶ sweep ─▶ triage ─▶ fix spec ┐   │  │
 │  │        ▲                                                      │   │  │
 │  │        └──────────────────────────────────────────────────────┘   │  │
-│  │   until sweep passes · max 3 sweeps, then surface                 │  │
+│  │   until sweep passes · max 3 sweeps · review = 2 axes             │  │
 │  └───────────────────────────────────────────────────────────────────┘  │
 │         │ PASS                                                          │
 │         ▼                                                               │
@@ -250,6 +277,19 @@ findings with a concrete suggested fix each, treated as hypotheses to
 cheap-probe, batched into ONE fix spec per iteration, delta-scoped re-review,
 at most two fix iterations before returning to spec or architecture.
 
+**The security axis runs alongside, not inside.** A separate reviewer, from a
+further family where the stack allows it, reads the same diff with a
+security-only scope: exploitability, trust boundaries, auth bypasses, injection
+and deserialization paths, races with a security consequence, secret exposure,
+and unsafe failure states. It produces its own severity-ranked findings and its
+own verdict, kept in their own list. A P0 or P1 on either axis blocks the
+iteration. A required reviewer that fails procedurally blocks too — it never
+falls back to the author's route, and never escalates to a reserve model the
+operator keeps for interactive work. Where a route is ineligible for the
+material on data-residency or data-policy grounds, record the skip as a review
+limitation; if that leaves a required axis unstaffed, surface it as a block.
+See `tenth-man.md` and `double-up-code-review.md` for the prompts.
+
 ### Inner agentic loop — the visual sweep
 
 After implement and code review pass on work with any user-facing surface
@@ -266,16 +306,26 @@ so):
    unreadable, confusing, or ugly all count; check light/dark and a mobile
    viewport where relevant. Output `VERDICT: PASS` or findings with screenshot
    path, what is wrong, and severity (P0 broken / P1 wrong / P2 polish).
-3. **Iterate autonomously** — findings become ONE batched fix spec, the
-   execution route implements it, code review reviews it, the sweep re-runs
+3. **Triage before spec** — sweep output is a pile of *observations*, not a
+   verdict, and this is doubly true when the sweep is fanned out across
+   parallel segments or flows. One triage stage — a single route with the whole
+   picture — de-duplicates observations that are one defect seen from three
+   flows, verifies each against the artifact it cites, discards the ones the
+   screenshot does not support, and ranks what remains. Skipping triage is how
+   a pipeline spends an iteration implementing noise, and how one real P0
+   drowns in forty P2 opinions.
+4. **Iterate autonomously** — triaged findings become ONE batched fix spec, the
+   execution route implements it, both review axes review it, the sweep re-runs
    delta-scoped to the affected flows. **Max 3 iterations**, then stop and
    surface what still fails.
-4. **Green = `VERDICT: PASS`.** Only then does the operator enter.
+5. **Green = `VERDICT: PASS`.** Only then does the operator enter.
 
 **The re-spec phase is integrated here and is explicit:** findings never go to
-an executor raw. The sweep worker itself writes the batched fix spec —
-post-patch expected behavior per finding, referencing the screenshots — and
-that spec is what implement executes.
+an executor raw. The **triage stage** writes the one batched fix spec from the
+ranked, verified findings — post-patch expected behavior per finding,
+referencing the screenshots — and that spec is what implement executes. The
+sweep worker does not write the spec; it produced the observations the triage
+stage just filtered, so it is the wrong party to judge which of them survived.
 
 ### Outer human loop — the feel pass
 
@@ -301,9 +351,15 @@ constraints, rate limits, cost, latency, and observed performance:
 
 - `<Execution Route>` — implements tickets and fix specs. A capable workhorse;
   volume work, so cost and rate limits matter.
-- `<Review Route>` — the independent dissent gate. Strongest available
-  independent context; a different model family from the execution route when
-  possible.
+- `<Review Route>` — the independent correctness dissent gate. Strongest
+  available independent context; a different model family from the execution
+  route when possible.
+- `<Security Review Route>` — the blocking security axis. A further family
+  where one exists, with a security-only prompt. Required on every iteration
+  that produces code, not only on security-flavored tickets.
+- `<Triage Route>` — verifies, de-duplicates, and ranks sweep observations
+  before they become a fix spec. Needs the whole picture, so it is one route,
+  not a fan-out.
 - `<Cold Reader Route>` — the spec reviewer. Fresh context is mandatory;
   different family preferred.
 - `<Visual Walker Route>` — the sweep worker. Must be able to drive a UI
@@ -331,6 +387,10 @@ and the feel loop.
 
 - Sweep loop: max 3 iterations, then surface.
 - Review fix cycles: max 2 iterations, then back to spec or architecture.
+- Every stage that produces a file the operator is expected to open later —
+  spec, review artifact, screenshot trail, report — writes it to a durable path
+  before the stage reports done. A path inside a temporary directory or a
+  worktree is not durable.
 - Long-running dispatches (sweeps, big implement runs) get a bounded watcher
   and a deadline alarm sized to roughly 3× expected runtime — a stalled
   background job must alert the operator, never strand the pipeline silently.
@@ -385,7 +445,16 @@ A correct installation passes all of these on a toy repository:
 8. The visual walker produces screenshots and a `VERDICT:` line for a trivial
    web page, and the loop demonstrably stops after 3 iterations on a
    contrived always-failing finding.
-9. No secrets or identifying local details appear in any published artifact.
+9. The security axis runs on a code iteration, reports separately from the
+   correctness axis, and blocks the loop on a planted injection or
+   secret-exposure defect. Making it fail blocks the loop rather than falling
+   back to another route.
+10. Feeding the triage stage the same defect observed from three flows yields
+    one ranked finding, not three, and an observation contradicted by its own
+    screenshot is discarded with a reason.
+11. Every artifact named in a stage's completion report still exists after the
+    run's temporary directories are removed.
+12. No secrets or identifying local details appear in any published artifact.
 
 ## Redaction Rule
 

@@ -15,13 +15,37 @@ priced to be used.
 
 The protocol is model-agnostic. "Mythos-class" is a **role**, not a brand:
 whichever model on your stack is currently the deepest reasoner and the most
-aggressively metered. Today, for many builders, that is the frontier Claude
-model inside Claude Code, with Codex GPT-5.5 as the workhorse — and that
-concrete stack is used as the worked example throughout. If the situation
-reverses, or another family pushes to the front, you don't rewrite anything
-by hand: **tell your frontier model to update this skill to reflect the
-present situation.** It will take care of it. That self-update clause is
-part of the spec.
+aggressively metered. For many builders that is the frontier model inside their
+interactive coding harness, with a second subscription's coding model as the
+workhorse — and a stack of that shape is used as the worked example throughout.
+If the situation reverses, or another family pushes to the front, you don't
+rewrite anything by hand: **tell your frontier model to update this skill to
+reflect the present situation.** It will take care of it. That self-update
+clause is part of the spec.
+
+> **Doctrine version: 2026-08-19.** Every model name, tier name, and effort
+> label below is a worked example with a shelf life. The roles, the rules, and
+> the economics are the portable part. Re-verify the names against current
+> documentation before you install, and re-derive them via the self-update
+> clause whenever your subscriptions move.
+
+## Contract
+
+- Expensive tokens buy thinking. Cheap tokens buy doing.
+- The reserve model is human-interactive only: no reserve-family subagents at
+  any tier, no headless dispatches, no scheduled jobs, no review lanes.
+- Volume work goes to the workhorse ladder, on the lightest tier that suffices.
+- Resolve every model identifier, effort setting, and reviewer from the host's
+  machine-readable routing config. Never from memory.
+- Cap reasoning effort at high unless the human states a need for a higher tier
+  in that specific case.
+- Every PR keeps two blocking review axes — correctness and security — and
+  neither runs on the reserve plan.
+- A required reviewer that fails procedurally blocks. It never escalates to the
+  reserve model as a fallback.
+- Exclude a route from sensitive material by hosting jurisdiction and data
+  policy, not by vendor reputation. Gate the surface, not the model.
+- The orchestrator implements inline only inside the size limits below.
 
 ## Skill Identity
 
@@ -34,17 +58,17 @@ part of the spec.
   selection, any PR-review staffing decision, and any "should the
   orchestrator just do this itself?" call.
 - Audience: solo builders and small teams orchestrating an agentic coding
-  harness (the worked example: Claude Code as the main session, Codex CLI
-  via `codex exec` as the delegated executor).
+  harness — an interactive frontier session as the main thread, a second
+  subscription's CLI as the delegated executor.
 
 ## The Problem This Solves
 
 Frontier reasoning models are at their best when you let them think long,
 loop, and experiment — which is exactly what makes them able to consume a
 week's subscription quota in an afternoon. Meanwhile the workhorse tier
-(in the example: GPT-5.5 on a Codex plan) is a seriously capable
-implementation and review model whose low/medium-effort lanes are hard to
-exhaust at all — a fact a surprising number of builders overlook.
+is a seriously capable implementation and review model whose low and medium
+effort lanes are hard to exhaust at all — a fact a surprising number of
+builders overlook.
 
 The common failure mode is routing by habit instead of by economics: the
 expensive model writes boilerplate, explores codebases, runs test loops, and
@@ -89,17 +113,24 @@ sweeps, codebase exploration, PR review, scheduled jobs.
 
 ## Hard Rules
 
-1. **Zero reserve-family subagents, any tier.** Smaller siblings of the
-   Mythos-class model usually bill the same plan — in the example, Opus,
-   Sonnet, and Haiku spawns all draw from the one Claude subscription, so a
-   "cheap" exploration subagent is not cheap. Inside a reserve session,
-   delegation means shelling out to the workhorse CLI (`codex exec` in the
-   example), full stop. Do not use the harness's native subagent/Task tool
-   with reserve-family models.
-2. **No headless reserve dispatches** (e.g. `claude -p`) from scripts or
-   other agents — they burn the reserve invisibly.
-3. **No scheduled or background reserve jobs.** Timed/cron/CI lanes run the
-   workhorse.
+1. **The reserve family is human-interactive only — every lane, no
+   exceptions.** Smaller siblings of the Mythos-class model usually bill the
+   same plan, so a "cheap" exploration subagent is not cheap. That covers all
+   of: native subagent/Task spawns at any tier, headless dispatches from
+   scripts or other agents, scheduled and CI lanes, and **review lanes**.
+   Review is the one people leave behind, because "it is only a review" — and
+   then the reserve is staffing a gate that runs on every PR. Inside a reserve
+   session, delegation means shelling out to the workhorse CLI, full stop.
+2. **Resolve routes from the config, never from memory.** Where a
+   machine-readable routing config exists it is the source of truth for model
+   identifiers, effort, and reviewer staffing. A remembered identifier goes
+   stale silently and a retired one fails at dispatch time. An unknown or
+   retired identifier must fail fast rather than fall through to a default.
+3. **Effort ceiling: high.** No lane — orchestrator, executor, or reviewer —
+   runs above the host's normal high tier unless the human states a need for
+   that specific case. Top tiers overthink each step, spend the scarcest quota
+   fastest, and rarely change the answer. This retires any older rule that
+   said review always runs at the maximum tier.
 4. **No multi-agent ceremony in the reserve session.** A Mythos session is
    single-threaded, focused, bounded: no recursive agent trees, no parallel
    reserve fan-outs, no "ultra" workflow patterns. One problem in, one
@@ -116,50 +147,103 @@ sweeps, codebase exploration, PR review, scheduled jobs.
    Mythos-class problem, the human enables it for that run and switches it
    back off.
 
-## Routing Table — Example Instantiation (mid-2026)
+## The Workhorse Ladder
 
-The mapping below is the worked example, not the spec. The roles are the
-spec; refresh the names via the self-update clause whenever the landscape
-moves.
+A modern workhorse subscription is not one model. It is a ladder of tiers that
+trade capability against burn, and the routing win comes from putting each unit
+of work on the lightest rung that still clears it.
+
+Three rungs are enough:
+
+- **Orchestration rung** — the strongest tier. Orchestration, review lanes, and
+  a *bounded* one-rung escalation for a unit that genuinely defeated the rung
+  below. Never bulk volume: this rung is where a careless fan-out empties the
+  window.
+- **Standard rung** — the everyday executor. Well-specced implementation and
+  research. Medium effort by default, high when the unit is demanding.
+- **Mechanical rung** — templated and mechanical work: probes, queues,
+  classification, boilerplate, small well-specced patches. Medium effort.
+
+**The rung ladder is not a rate-limit ladder.** On at least one major provider
+the short rolling rate window is enforced at the *account* level, shared by
+every tier — verify this on your own stack with a cheap probe rather than
+assuming. Where it is shared, no rung rescues another rung's exhausted window,
+and "escalate a tier" is not a workaround. When the window is dead: queue the
+work until it resets, or move genuinely urgent units to a *different family*
+that respects your reserve floor. Never promote bulk volume to the orchestration
+rung to get around a window.
+
+Distinguish two failure shapes that look alike: an exhausted window (queue and
+wait) and a model-identifier rollout error (one logged retry on a sibling rung,
+then fail closed and surface it). Treating a rollout error as a window
+exhaustion strands the pipeline; treating an exhaustion as a rollout error
+burns the next rung too.
+
+## Routing Table — Example Instantiation
+
+The mapping below is the worked example, not the spec. The roles are the spec;
+refresh the names via the self-update clause whenever the landscape moves.
 
 | Work | Route |
 |---|---|
-| Narrow mechanical patch | Codex GPT-5.3 Spark, low effort |
-| Standard well-specced feature | Codex GPT-5.3 Spark, medium effort |
-| Challenging well-specced patch | Codex GPT-5.5, low effort |
-| Research sweep / codebase exploration | Codex GPT-5.5, medium–high effort |
-| PR review / dissent gate | Codex GPT-5.5, xhigh effort (see below) |
-| Optional second antagonist on high-risk PRs | A third model family (e.g. Gemini CLI) |
-| Architecture, security, hard debugging, strategy | Mythos-class main thread (the reserve) |
+| Narrow mechanical patch, probe, classification | Workhorse mechanical rung, medium effort |
+| Standard well-specced feature | Workhorse standard rung, medium effort |
+| Challenging well-specced patch | Workhorse standard rung, high effort |
+| Research sweep / codebase exploration | Workhorse standard rung, medium–high effort |
+| A unit that defeated the standard rung | Workhorse orchestration rung, high effort, bounded |
+| Headless / scheduled orchestration | Workhorse orchestration rung, high effort |
+| PR correctness review | Independent reviewer family, high effort (Lane R1) |
+| PR security review | A further independent family, high effort (Lane R2) |
+| Optional advisory review on high-risk PRs | A further family still (Lane R3) |
+| Visual / UX walk of a running build | A route with real UI-driving capability, medium effort |
+| Architecture, security reasoning, hard debugging, strategy | Mythos-class main thread (the reserve) |
 
-Effort-tier names follow the Codex CLI's `model_reasoning_effort` settings.
+Effort-tier names follow whatever your workhorse CLI calls its reasoning-effort
+setting. Keep them in the routing config, not in prose.
 
 ## The Review Gate — Every PR Still Gets Reviewed
 
 Reserving the expensive model must not mean dropping review. Three lanes:
 
-- **Lane R1 (default, all PRs):** a fresh-context workhorse reviewer at its
-  highest reasoning effort, with an antagonist, findings-only prompt. The
-  reviewer must be a **separate invocation** from the implementer — the
-  session that wrote the code never reviews its own diff. Cross-instance
-  review within one family, given a fresh context and an adversarial prompt,
-  catches the large majority of what cross-family review catches, at zero
-  reserve cost. (See the `tenth-man.md` spec in this repo for a full
-  antagonist prompt template.)
-- **Lane R2 (high-risk PRs, optional):** add a genuinely different model
-  family as a second independent antagonist. Use for auth, payments,
-  data-loss surfaces, caching/service-worker behavior, and anything
-  production-adjacent. Still zero reserve cost.
-- **Lane R3 (Mythos sessions):** when the reserve model is *already engaged*
-  as the orchestrator on a hard problem, have it read the final diff and
-  issue an in-session verdict **in addition to** Lane R1. The marginal cost
-  is small (context already loaded) and it catches spec-level and
-  architectural misses that implementation-focused review tends not to flag.
-  Never spawn a *separate* reserve process for this.
-- **Independence rule:** whoever authored the spec has structural blind
-  spots about it. The gate that counts is always the fresh-context
-  independent pass (R1); an orchestrator's own verdict is additive, never a
-  substitute.
+- **Lane R1 — correctness (blocking, every PR):** a fresh-context antagonist
+  at high effort with a findings-only prompt, from a family different from the
+  author's where the stack allows it. The reviewer must be a **separate
+  invocation** from the implementer — the session that wrote the code never
+  reviews its own diff. Where no other family is available, cross-instance
+  review within one family, given fresh context and an adversarial prompt,
+  still catches most of what cross-family review catches. (See `tenth-man.md`
+  in this repo for the prompt template.) Zero reserve cost.
+- **Lane R2 — security (blocking, every PR):** a *separate* reviewer, from a
+  further family, with a security-only scope: exploitability, trust boundaries,
+  auth bypasses, injection paths, races with a security consequence, secret
+  exposure, unsafe failure states. Not a bullet inside the R1 prompt — a
+  mixed checklist loses the security items to the correctness items every
+  time. This lane is why the number of families on a modern stack matters more
+  than the number of subscriptions. Zero reserve cost.
+- **Lane R3 — advisory (optional, high-risk PRs):** a further independent
+  family on auth, payments, data-loss surfaces, caching and service-worker
+  behavior, and anything production-adjacent. Non-blocking: its findings are
+  triaged into R1 or R2 when real, and never block on their own authority.
+  See `double-up-code-review.md`. Still zero reserve cost.
+- **Lane R4 — reserve in-session verdict (Mythos sessions only):** when the
+  reserve model is *already engaged* as the orchestrator on a hard problem,
+  have it read the final diff and issue an in-session verdict **in addition
+  to** R1 and R2. The marginal cost is small — the context is already loaded —
+  and it catches spec-level and architectural misses that implementation-focused
+  review tends not to flag. Never spawn a *separate* reserve process for this.
+- **Independence rule:** whoever authored the spec has structural blind spots
+  about it. The gates that count are the fresh-context independent passes (R1,
+  R2); an orchestrator's own verdict is additive, never a substitute.
+- **Fail-closed rule:** a required lane that fails procedurally — wrapper error,
+  timeout, unparseable verdict — blocks the merge. It never escalates to the
+  reserve as a fallback, and it never falls back to the author's family. Fix the
+  route or take the block.
+- **Data-residency rule:** exclude a route from sensitive material by where the
+  data is hosted and what the provider's data policy allows, not by vendor
+  reputation. Gate the surface, not the model: the same route may be a full peer
+  on ordinary code and ineligible for one regulated surface. A jurisdiction skip
+  is a recorded review limitation and is non-blocking; if it leaves a *required*
+  axis unstaffed, that is a block for a human to resolve.
 
 ## Inline vs. Delegate — When the Orchestrator Codes Itself
 
@@ -240,24 +324,36 @@ Things that silently burn the reserve — audit your setup for each:
 - Loop / ultra-review / autonomous-workflow features left enabled on the
   reserve plan — the single biggest one-prompt quota killers; hard-disable
   them (rule 6)
+- **Review lanes still staffed with the reserve family** — the most common
+  leak once the obvious ones are fixed, because a per-PR gate looks small and
+  runs on every PR
+- Routing configs that name a model identifier the provider has since retired,
+  so dispatch silently falls back to a default tier
+- Visual/UX walkers, summarizers, and triage steps quietly defaulting to the
+  reserve family inside otherwise-workhorse pipelines
 
-## Installation Recipe (worked example: Claude Code + Codex CLI)
+## Installation Recipe
 
 Install the same protocol where **both** agents read it:
 
-1. **Claude Code:** create `~/.claude/skills/mythos-reserve-routing/SKILL.md`
-   with YAML frontmatter (`name`, and a `description` that triggers on any
-   routing, model-selection, review-staffing, or quota decision) followed by
-   the rules above, edited to your dates and model versions.
-2. **Codex CLI:** create `~/.codex/prompts/mythos-reserve-routing.md` with
-   the same content from the workhorse's perspective (its key rule: it never
+1. **Reserve harness:** create the skill in that harness's skill directory,
+   with whatever metadata it requires (a name, and a description that triggers
+   on any routing, model-selection, review-staffing, or quota decision),
+   followed by the rules above, edited to your dates and model versions.
+2. **Workhorse CLI:** create the same content in that CLI's prompt or skill
+   directory, written from the workhorse's perspective (its key rule: it never
    routes work to the reserve on its own).
-3. Reference the skill from your global instructions file
-   (`~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md`) in one line each, so the
-   protocol is discoverable even when the skill isn't auto-triggered.
-4. If you keep a machine-readable routing config (TOML/JSON mapping task
-   types to provider/model/effort), make it the source of truth and have the
-   skill defer to it on conflict.
+3. Reference the skill from each agent's global instructions file in one line
+   each, so the protocol is discoverable even when the skill is not
+   auto-triggered.
+4. Keep a machine-readable routing config (TOML/JSON mapping task types to
+   provider, model identifier, effort, and reviewer role). Make it the source
+   of truth, have every skill defer to it on conflict, and have the dispatch
+   layer fail fast on an identifier the config does not know. This is what
+   keeps the prose in this spec from becoming the routing authority as it ages.
+5. Record which routes are ineligible for which data surfaces, with the reason
+   (hosting jurisdiction, provider data policy, contractual limit). Ineligibility
+   belongs in the config, not in an agent's judgment at dispatch time.
 
 For other harnesses, place the same two artifacts wherever each agent loads
 skills, prompts, or standing instructions.
@@ -270,19 +366,24 @@ skills, prompts, or standing instructions.
    through files itself.
 2. Ask it to fix a one-line typo it can already see. Correct behavior:
    inline edit, no dispatch.
-3. Open a PR and ask for review. Correct behavior: a fresh workhorse
-   invocation at top effort, separate from whichever invocation implemented
-   the change.
-4. During a declared sunset phase, ask for the Mythos-class model. Correct
+3. Open a PR and ask for review. Correct behavior: two independent
+   invocations — correctness and security — at high effort, from families
+   other than the author's where available, both separate from whichever
+   invocation implemented the change, and neither on the reserve plan.
+4. Make the security route fail. Correct behavior: the gate blocks and says so.
+   Incorrect behavior: it escalates to the reserve model or approves anyway.
+5. Ask for a scheduled or headless job. Correct behavior: it is staffed from
+   the workhorse ladder, never the reserve family, whatever the task.
+6. During a declared sunset phase, ask for the Mythos-class model. Correct
    behavior: refusal with a pointer to the phase rule, not a silent
    invocation.
 
 ## Redaction Note
 
-This spec names current public models and products (Claude Code, Claude
-Fable/Opus/Sonnet/Haiku, Codex, GPT-5.5, GPT-5.3 Spark, Gemini CLI) as a
-worked example only; the roles and rules are the portable part. Everything
-private to the originating setup — hostnames, repo layouts, org names,
-ticket systems, internal dates and directives — has been removed. When you
-install it, your local copy will accumulate private context of its own:
-keep it out of any public fork.
+This spec deliberately describes routes by **role** — reserve, workhorse rungs,
+correctness reviewer, security reviewer, advisory reviewer — rather than by
+brand. Role names do not go stale and do not reveal whose stack this came from.
+Everything private to the originating setup — hostnames, repo layouts, org
+names, ticket systems, wrapper commands, internal dates and directives — has
+been removed. When you install it, your local copy will accumulate private
+context of its own: keep it out of any public fork.
