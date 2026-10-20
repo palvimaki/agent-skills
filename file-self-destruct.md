@@ -179,9 +179,13 @@ reflex:
   native scheduler exists.
 
 On every platform, also register a login or boot item that runs the same wipe
-helper in check mode. At boot or login it verifies that the job for the
-recorded path, device, inode and creation cookie is still armed. If it is not,
-it runs the wipe-helper exit rule in Path Safety.
+helper in check mode. At boot or login it first reads the cancel tombstone
+store. A tombstone for the recorded path, device, inode and cookie means the
+wipe was cancelled: do not wipe, remove the remaining artifacts, and keep the
+tombstone. Only an explicit destroy-now request or a new arm for that path
+clears it. Without a tombstone, it verifies that the job for the recorded
+path, device, inode and creation cookie is still armed. If it is not, it runs
+the wipe-helper exit rule in Path Safety.
 
 Whatever the user calls it — "cron job", "timed task", "scheduled task" — choose
 the platform-native, promptless, unattended one-shot mechanism, and **verify the
@@ -207,8 +211,8 @@ second, deregister last.
 
 1. Receive the secret on stdin, plus the destination path and TTL.
 2. Before any write, apply the Path Safety checks to the destination. The
-   destination must be a canonical path inside the configured `<transient
-   root>`. Refuse any other path, a path inside the managed store, a path on
+   destination must be a canonical path inside the configured
+   `<transient root>`. Refuse any other path, a path inside the managed store, a path on
    the canary allowlist, a path with a leaf symbolic link, and a path that
    already exists. Create the file with
    exclusive no-follow creation (for example `O_CREAT|O_EXCL|O_NOFOLLOW`, mode
@@ -245,12 +249,16 @@ the wipe. Do not print it in the chat.
 
 Two early actions exist. Bind each one to an explicit user request:
 
-- **Cancel the wipe** (keep the file): deregister the job, remove the login or
-  boot check item for that path, and delete all scheduling artifacts by
-  explicit path. Leave the target file in place, and
+- **Cancel the wipe** (keep the file). Cancellation is a recorded state, in
+  this order: (1) remove the login or boot check item for that path and
+  verify its removal; (2) write a cancel tombstone (canonical path, device,
+  inode, cookie) to the tombstone store that the wipe helper reads as
+  authoritative; (3) deregister the job and delete all scheduling artifacts
+  by explicit path. A check or wipe run that is already in progress reads the
+  tombstone before it overwrites anything. Leave the target file in place, and
   state the residual risk.
-- **Destroy now**: shred the one canonical target at once, by the Path Safety
-  rules below, and verify the wipe. Only after that check succeeds,
+- **Destroy now**: clear any matching cancel tombstone first, then shred the
+  one canonical target at once, by the Path Safety rules below, and verify the wipe. Only after that check succeeds,
   deregister the job and delete its scheduling artifacts. On any failure,
   leave the job armed and report the failure.
 
@@ -318,10 +326,18 @@ Every check works on the resolved path, not on the string the caller gives:
   does not search for the moved file. Report the incident. The retry never
   wipes a file that later appears at that path unless it carries the recorded
   cookie. Remove the destructive job after a verified wipe of the cookie-bound
-  file, or after an operator decision on the incident.
+  file, or after an operator decision on the incident. A path that is missing
+  because this job id already verified the wipe of its cookie-bound file is
+  post-wipe cleanup, not an incident.
+- Before any overwrite, the wipe helper reads the cancel tombstone store. A
+  tombstone for this path, device, inode and cookie means stop: no wipe, no
+  replacement job and no exit-rule shred. The exit rule below does not apply
+  to a cancelled path.
 - The wipe helper never exits with the secret on disk and no verified job. If
   a wipe fails, it registers a replacement job and checks that the scheduler
-  lists it, retrying in-process. If no replacement job verifies and the open
+  lists it, retrying in-process. Only after the replacement verifies does it
+  deregister a still-armed repeating job (its own job last, per Critical
+  Teardown Ordering) and verify that exactly one job is armed. If no replacement job verifies and the open
   descriptor still matches the recorded device, inode and creation cookie, it
   overwrites and
   unlinks through that descriptor before exit, and verifies the inode is gone.
@@ -380,7 +396,10 @@ Deterministic and offline:
 
 Boot-check fixtures: remove the job but keep the file, then run the check
 item, and assert it applies the wipe-helper exit rule. Cancel a wipe, then run
-the check item, and assert the file is untouched.
+the check item, and assert the file is untouched. Start a check instance,
+cancel the wipe while it runs, and assert the instance reads the tombstone and
+leaves the file untouched. Fail a wipe on a repeating job, and assert exactly
+one job is armed afterwards.
 
 Also assert that the helper refuses, before it writes any byte, a path inside
 the managed store, a path on a fixture canary allowlist, and an existing file

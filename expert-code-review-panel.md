@@ -30,9 +30,14 @@ delivery owner. It is not the merge gate.
   external repository, the profile's separate security axis still runs at the
   gate.
 - A procedural failure (no verdict, timeout, route error) moves that seat to
-  its next declared route. It is never a GO. A seat with no route left makes
-  the panel NO CONSENSUS. The runner sets the status: NOGO when the consensus
-  or the security list contains any P0/P1, whatever the dissent text says.
+  its next declared route. It is never a GO. The runner sets the status in
+  this order: NOGO whenever any seat's findings or the consensus contain a
+  P0/P1, including a P0/P1 that the consensus rejects (it stays blocking until
+  the dismissal rule in Relation to the Merge Gate clears it), whatever the
+  dissent text says; otherwise NO CONSENSUS when Expert A, Expert B, the
+  dissent expert or the security expert (and the implementation expert when
+  `implement` is true) exhausted its routes; otherwise GO or NOGO by the
+  consensus rule.
 - Sensitive material goes only to routes cleared for sensitive data.
 - Read-only by default. Implement fixes only on request. Any fix is a new head
   and goes through the standard ladder before merge.
@@ -96,8 +101,9 @@ verification unless the operator asks for an executed action plan.
   are provably not the authoring session, and state the limitation. Do not stop
   the panel to ask the operator.
 - Exclude a route from sensitive material by where the data goes, not by vendor
-  reputation. Record each skip. If a seat has no cleared route, the panel
-  reports `NO CONSENSUS` for that reason; it does not pass silently.
+  reputation. Record each skip. A seat with no cleared route counts as
+  exhausted, and the Contract status order applies: NOGO on any P0/P1,
+  otherwise `NO CONSENSUS`; it does not pass silently.
 - Never discard or overwrite unrelated changes. Never deploy.
 - Redact secrets before any prompt, response, transcript, recap or log.
 - Separate confirmed evidence from inference.
@@ -512,7 +518,9 @@ follow-up records or artifact writes. Also check that:
 - a P2-only result gives `GO` with recorded follow-ups;
 - a security-seat P1, or a consensus P1, gives `NOGO` even when both experts
   converge and the synthetic dissent returns `GO`; an exhausted security seat
-  gives NO CONSENSUS;
+  gives NO CONSENSUS; an exhausted security seat together with a consensus P1
+  gives NOGO;
+- an Expert A P1 that the final consensus rejects gives `NOGO`;
 - a seat that returns no verdict or times out moves to its next route and is
   never counted as `GO` or `CONVERGENCE: YES`;
 - no artifact contains absolute local paths, user names, host names or

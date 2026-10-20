@@ -81,8 +81,8 @@ rung names a route, its effort and its stage time limit. Typical profiles:
   available, one secondary review from a different route. The frontier seat
   and the security seat are required seats. The secondary seat is a declared
   optional seat. A procedural failure on any seat tries that seat's next
-  declared rung. If a required seat exhausts its ladder, the round has `NO
-  VERDICT`. Only the optional secondary seat may end exhausted with a recorded
+  declared rung. If a required seat exhausts its ladder, the round has
+  `NO VERDICT`. Only the optional secondary seat may end exhausted with a recorded
   limitation; the frontier verdict then stands alone, and only when no seat
   reported a P0/P1, including a P0/P1 finding entry in a timed-out partial (a
   negated sentence is not a finding). An actual
@@ -236,8 +236,9 @@ autonomously only when all of these hold for the current head SHA:
   that is added by this PR, written by an agent, or quoted from a work record
   does not count. A missing or unverified record blocks the merge. A missing
   `<gate paths>` list blocks every autonomous merge. When the list is present,
-  a diff that adds a workflow, hook, merge script or gate runner also needs an
-  operator record that names that new path, whether or not the path is on the
+  a diff that adds, modifies, deletes, renames or moves a workflow, hook,
+  merge script or gate runner also needs an operator record, as above, that
+  names this head SHA and the touched path, whether or not the path is on the
   list yet;
 
 Rules:
@@ -501,11 +502,11 @@ VERDICT: GO | NOGO
 1. Create a skill, command or agent named `tenth-man` in the harness's normal
    skill location. Store this document as its instructions, or convert the
    sections from "Skill Identity" to "Output Format".
-2. Add the `<review ladder>` for each repository profile to the `<routing
-config>`: ordered rungs, effort, stage limit, sensitive-data clearance and a
-separate security ladder where the profile needs one. Declare the `<gate
-paths>` list: every gate spec and every file that implements a review, merge
-or human gate.
+2. Add the `<review ladder>` for each repository profile to the
+   `<routing config>`: ordered rungs, effort, stage limit, sensitive-data
+   clearance and a separate security ladder where the profile needs one.
+   Declare the `<gate paths>` list: every gate spec and every file that
+   implements a review, merge or human gate.
 3. Keep an availability record per route, so the gate skips an unavailable
    rung at once.
 4. Implement evidence freeze, redaction, head-SHA binding, verdict parsing,
@@ -556,7 +557,9 @@ Use a temporary repository or a synthetic plan with no private data.
     seat's ladder. Confirm `NO VERDICT`, never a skip.
 14. Change a gate path with no decision record, then with a record that the PR
     itself adds, then with a record committed on another branch under the
-    operator's git identity. Confirm all three block.
+    operator's git identity. Confirm all three block. Then modify an existing
+    off-list hook so that it skips a gate. Confirm the merge blocks until an
+    operator record names that path.
 15. On a production profile, do not start the secondary seat and record no
     skip. Confirm the merge blocks.
 16. Leave sensitivity unclassified. Confirm only cleared rungs run.
