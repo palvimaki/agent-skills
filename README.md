@@ -2,7 +2,7 @@
 
 Elevate your agentic coding (and publish your own skills!) with these powerful skills
 
-Portable, implementation-agnostic specifications for thirteen LLM agent skills.
+Portable, implementation-agnostic specifications for fourteen LLM agent skills.
 
 Every spec opens with a dated **doctrine version** line and a short **Contract**
 block — the normative core in about ten lines — so you can judge freshness at a
@@ -28,6 +28,8 @@ Current doctrine version: **2026-08-19**.
 - **[visual-review.md](visual-review.md)** — the autonomous visual and UX gate, extracted from the pipeline as a skill you can run on its own: walk the running build, screenshot every meaningful state, judge each against the spec's acceptance criteria, triage the observations, batch them into one fix spec, and iterate — at most three times — until an explicit `VERDICT: PASS`. It closes the gap between "the tests pass" and "it looks and behaves right", and it keeps human attention for the one thing an agent cannot judge: feel. Includes the walker brief, the capability check that decides whether a route can hold the role at all, the scoped mid-run sweep for foundation work, and the screenshot-specific redaction rules.
 
 - **[operator-blocker.md](operator-blocker.md)** — a presentation protocol for handing a human the decisions only they can make. Announce the count and stop; then one blocker per message, each a self-contained plain-language nugget with the recommendation first. No identifiers, no stacking, no manufactured decisions. Written for the operator who runs several agent sessions at once and holds none of the codebases in their head — for whom a wall of blockers naming pull requests and subsystems is not a queue but a wall.
+
+- **[home-digital-twin.md](home-digital-twin.md)** — build a faithful, walkable 3D model of your own home from phone scans (LiDAR + RoomPlan) and photos, iterate on your walk-through screenshots, and try real store furniture in place: the agent reads a store's current product pages (worked example: Finnish furniture stores such as IKEA Finland), keeps what fits your spot, models each product at catalogue size, and adds a key in the game that cycles them next to your piano or wherever you choose. Built on a vector floor plan and cell-stack shell builder, so walls and ceilings come out straight instead of full of scan artifacts; includes intake checklist, walkability tests, rescue key, daylight and window views, and the store try-out workflow.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
 
@@ -65,7 +67,7 @@ The LLM will create the skill file, wire up the runner, and (if the spec's smoke
 
 Each file is structured for a human reader. The prompt templates are verbatim. The workflow is numbered. The artifact layout is explicit. A competent engineer can build either panel skill in a few hundred lines of shell or Python that shells out to local CLIs. The content-presentation skill is mostly a routing rule plus a stylesheet and needs no runtime of its own.
 
-## Why these thirteen
+## Why these fourteen
 
 They are the skills I use most often, in this order:
 
@@ -82,6 +84,7 @@ They are the skills I use most often, in this order:
 11. **visual-review** — the gate that keeps the human out of the correctness loop entirely. Everything an attentive observer could catch, an agent catches first, with a screenshot to prove it; the human's scarce judgment is spent only on feel.
 12. **operator-blocker** — the counterpart on the other side of that handoff. Getting the work right is half of it; the other half is asking for a decision in a form a busy human can actually answer in one pass.
 13. **production-pipeline** — the umbrella workflow the other skills serve: spec everything first, let agents iterate to correctness in a bounded inner loop with review and an autonomous visual gate inside it, and reserve the human for the two things only a human can do — the design decisions up front and the feel judgment at the end. Findings become specs before they become code, and nothing re-reviews after the operator's green light.
+14. **home-digital-twin** — the fun one: a walkable 3D model of your own home from phone scans and photos, built from a clean vector plan so the walls and ceilings come out straight, plus a store try-out that puts real, true-size furniture from a store's current catalogue next to your piano at the press of a key.
 
 All are designed to fail safe: no deploys, no external messages, no code changes unless explicitly requested. The single intentional exception is `file-self-destruct`, whose whole purpose is a scoped, single-path deletion of a secret file you asked to expire.
 
