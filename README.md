@@ -2,7 +2,7 @@
 
 Elevate your agentic coding (and publish your own skills!) with these powerful skills
 
-Portable, implementation-agnostic specifications for thirteen LLM agent skills.
+Portable, implementation-agnostic specifications for fourteen LLM agent skills.
 
 Every spec opens with a dated **doctrine version** line and a short **Contract**
 block — the normative core in about ten lines — so you can judge freshness at a
@@ -28,6 +28,8 @@ Current doctrine version: **2026-08-19**.
 - **[visual-review.md](visual-review.md)** — the autonomous visual and UX gate, extracted from the pipeline as a skill you can run on its own: walk the running build, screenshot every meaningful state, judge each against the spec's acceptance criteria, triage the observations, batch them into one fix spec, and iterate — at most three times — until an explicit `VERDICT: PASS`. It closes the gap between "the tests pass" and "it looks and behaves right", and it keeps human attention for the one thing an agent cannot judge: feel. Includes the walker brief, the capability check that decides whether a route can hold the role at all, the scoped mid-run sweep for foundation work, and the screenshot-specific redaction rules.
 
 - **[operator-blocker.md](operator-blocker.md)** — a presentation protocol for handing a human the decisions only they can make. Announce the count and stop; then one blocker per message, each a self-contained plain-language nugget with the recommendation first. No identifiers, no stacking, no manufactured decisions. Written for the operator who runs several agent sessions at once and holds none of the codebases in their head — for whom a wall of blockers naming pull requests and subsystems is not a queue but a wall.
+
+- **[home-digital-twin.md](home-digital-twin.md)** — build a faithful, walkable 3D model of your own home from phone scans (LiDAR + RoomPlan) and photos, iterate on your walk-through screenshots, and try real store furniture in place: the agent reads a store's current product pages (worked example: Finnish furniture stores such as IKEA Finland), keeps what fits your spot, models each product at catalogue size, and adds a key in the game that cycles them next to your piano or wherever you choose. Built on a vector floor plan and cell-stack shell builder, so walls and ceilings come out straight instead of full of scan artifacts; includes intake checklist, walkability tests, rescue key, daylight and window views, and the store try-out workflow.
 
 Each file is self-contained. It describes trigger conditions, inputs, outputs, workflow, prompt templates, artifact layout, redaction rules, installation recipe, and a smoke-test contract.
 
