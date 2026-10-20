@@ -1,226 +1,300 @@
 # Operator Blocker Skill Specification
 
 This document defines a reusable skill for handing a human the decisions only
-they can make. It is intentionally provider-agnostic, model-agnostic,
-harness-agnostic, and machine-agnostic.
+they can make, and nothing else. It is provider-agnostic, model-agnostic,
+harness-agnostic and machine-agnostic.
 
-Any capable LLM agent that can write text can implement it. No LLM API, SDK, or
-provider dependency is required — the whole skill is a presentation protocol.
+Any capable LLM agent that can write text can implement it. No LLM API, SDK or
+provider dependency is required. The skill is a presentation protocol plus a
+filter on what counts as a blocker.
 
-> **Doctrine version: 2026-08-19.** This spec describes a communication
-> protocol, not a toolchain, so it ages slowly. Adapt the wording to your
-> operator's vocabulary; keep the sequencing rules exactly.
+> **Doctrine version: 2026-10-20.** This version narrows blockers to true human
+> gates, adds a probe-first evidence step, uses a `Decision needed:` marker with
+> one decision per message, and adds the no-open-loops close rule. It describes
+> a protocol, not a toolchain, so it ages slowly.
 
 ## Contract
 
-- Announce the **count** first. One line. No detail, no preview, no options.
-- Then stop and wait for a go.
-- Present **one** blocker per message. Never stack. "And also…" is banned.
-- Each blocker is a self-contained nugget: what it is, the decision, 2–3 plain
-  options, **recommendation first**, marked as recommended, with one line of why.
+- Only a **true human gate** is a blocker. Everything reversible or internal,
+  the agent does itself.
+- Before asking, the agent escalates an undoable reversible step through other
+  agent routes. The operator is the last route, not the first.
+- Routine process exceptions (extra repair cycles, deadline extensions) go to an
+  independent 10th-man reviewer, never to the operator.
+- Probe first. Every card carries labelled evidence of the current state.
+- **One decision per message**, marked `Decision needed:`, with the position in
+  the queue ("1 of 3"). Never stack.
+- Each card is self-contained: what it is, the decision, 2–3 plain options,
+  **recommendation first**, marked, with one line of why.
 - Never assume recall. Name things by what they *do*, never by an identifier.
-- Always recommend. A bare "which do you want?" outsources the thinking.
-- Do not manufacture blockers. Work you are already cleared to do, you do.
-- This is sequencing, not withholding. The operator gets everything, one piece at
-  a time.
+- Present a known gate as soon as its packet is ready, not at the end of the
+  path.
+- Never ask for a secret value in chat. The operator enters credentials and 2FA
+  privately, in the place the card names.
+- Record each answer durably. While a decision is open, the reply ends by saying
+  the session waits for it.
 
 ## Skill Identity
 
 Name: `operator-blocker`.
 
-Purpose: convert a pile of human-gated decisions into a sequence of single,
-answerable questions, so the human can decide each one from first principles
-without reconstructing the project in their head.
+Purpose: turn the few decisions that truly need the human into a sequence of
+single, answerable questions, so the operator can decide each one from first
+principles without rebuilding the project in their head.
 
-Use this skill whenever you are about to hand the operator one or more
-decisions, approvals, or judgments that only they can make:
+Use this skill whenever an agent is about to hand the operator a decision,
+approval or action at a true human gate, at an end-of-task wrap-up that still
+holds one, or when the operator says "let's go through the blockers".
 
-- promoting anything to production;
-- spending money, setting a price, or committing to a contract;
-- entering credentials, or granting access;
-- accepting a security or privacy trade-off;
-- anything irreversible or destructive;
-- a design fork where both branches are defensible;
-- a legal, account, or identity decision;
-- any moment you would otherwise end a message with "want me to X or Y?".
+## What Counts as a Blocker
 
-Triggers include reaching a gated decision mid-task, an end-of-task wrap-up that
-lists gated items, and the operator saying "let's go through the blockers".
+The operator gives standing authority for all non-production actions. A
+blocker is one of these **true human gates**:
+
+- a production-changing action: a production deploy or a store release;
+- the final public submit, for example a store "submit for review";
+- a final payment, purchase or other real-money action;
+- legal acceptance of terms or agreements;
+- entering credentials, passwords, passkeys or 2FA codes;
+- an account ownership, role, permission or recovery change;
+- an irreversible delete or data change;
+- a physical-world action, such as a field test or unlocking a physical device;
+- authority or personal input outside the standing delegation, such as a
+  product-scope choice only the operator can make.
+
+These are **never** blockers. The agent does them and says so in one line:
+
+- an internal or test build, an internal or closed test-track upload;
+- a file upload into a console the task already authorizes;
+- a draft save, a check re-run, a routine fix, a review;
+- an eligible merge to a development target;
+- a technical choice, a plan confirmation or any other reversible step;
+- an extra repair cycle or an agent-set deadline extension, which goes to the
+  10th-man reviewer;
+- a usage-limit hold, which the agent re-probes and routes around.
+
+If a rule the operator already gave answers the question, it is not a blocker.
+Apply the rule and move on.
+
+## Escalate Before You Ask
+
+When an agent cannot do an already-authorized reversible step itself (a tool
+cannot reach the page, an upload has a size limit, a browser is read-only), it
+escalates through agent routes in order:
+
+1. its own computer use or browser extension;
+2. a dedicated computer-use agent, bounded by an exact task file (account, app,
+   allowed URLs, allowed and forbidden controls, stop conditions), holding the
+   GUI and per-app locks, with a read-only check of the result afterwards;
+3. a frontier route with a different supported method.
+
+Do not route a harness or classifier denial around through another agent with
+the same method. Only when all routes fail does the step reach the operator.
+Then it is a card with a precise call to action: the exact page, the exact file
+or value, the exact control, and the evidence of each failed route.
+
+A route that meets a true human gate stops there. No agent takes that gate.
 
 ## The Problem This Solves
 
-An operator running several agent sessions at once does not hold any one
-codebase in their head. A wall of blockers written in agent vocabulary — PR
-numbers, branch names, ticket identifiers, subsystem nicknames — is
-unprocessable. They cannot remember which "PR #408" this is, or what "the
-tileproxy refactor" was, and the cost of reconstructing that context is higher
-than the decision itself. So the queue stalls, and the agent stalls with it.
+An operator running several agent sessions does not hold any one codebase in
+their head. Blockers written in agent vocabulary (PR numbers, branch names,
+ticket identifiers, subsystem nicknames) are unprocessable. The cost of
+reconstructing context is higher than the decision itself, so the queue stalls.
 
-The fix is not to write less. It is to write **one thing at a time**, in words
-that carry their own context.
-
-Define the unit precisely:
-
-> An **operator blocker** is any decision, approval, credential, or judgment
-> that only the human can make.
-
-Everything else is your job.
+A second failure is worse: agents that stop at false gates. An agent that asks
+"may I upload the test build?" turns the operator into the bottleneck of a step
+that was already authorized. The fix is to ask less, and to ask each real
+question one at a time, in words that carry their own context.
 
 ## The Protocol
 
-### Step 1 — Announce the count. Explain nothing.
+### Step 0 — Filter, escalate, probe
 
-One line: how many blockers are waiting, and whether they are ready. No detail,
-no options, no jargon, no preview of what is coming.
+1. Drop every item that is not a true human gate. Do those items.
+2. Escalate every undoable reversible step through the agent routes above.
+3. For each remaining gate, run the cheapest safe probe of its current state: a
+   status call, the tracker history, git state, the work record. A decision the
+   agents or the operator already executed is not a decision.
+4. Label the probe result on the card: `Verified:`, `Unverified:` or
+   `Probe blocked: <reason>`. Never pull secret material into context to build
+   evidence. If no safe probe exists, show the evidence gap, never a guess.
+
+### Step 1 — Present ONE card. Then stop.
+
+The first card carries the queue size in its marker. Write it in short, active
+sentences, one idea per sentence:
 
 ```text
-🚦 2 blockers are waiting on you. Ready to go through them one at a time?
+Decision needed (1 of 2): <the one thing to choose, in plain words>
+
+What this is: <one or two plain sentences; assume no recall>
+Evidence: Verified: <what the probe showed>
+Options:
+- <option A> (recommended): <one line of why>
+- <option B>: <one line>
+Where: <the exact page and control, if the operator acts themselves>
 ```
 
-Then **stop**. Wait for a go.
+Nothing else. No second card. No appendix. Stop and wait.
 
-If the operator already said "walk me through them", skip to Step 2 — but still
-give the count, because the count tells them how much they are agreeing to.
+If the operator says "later", hold the queue and continue unblocked work. Do
+not nag. The reply still ends by saying the session waits for that decision.
 
-If they say "later", hold the queue, carry on with unblocked work, and do not
-nag.
+### Step 2 — Take the answer, then the next card
 
-### Step 2 — Present ONE blocker. Then stop.
-
-For the single blocker in front of them, write a short, self-contained nugget:
-
-- **What this is** — one or two plain sentences. Assume they remember nothing.
-  No bare identifiers: if you must reference one, say what it *does* in human
-  words, not what it is called.
-- **The decision** — the one thing they are choosing, stated plainly.
-- **Options** — two or three plain-language choices, **recommendation first and
-  marked as recommended**, with at most one sentence of why.
-
-Nothing else. No second blocker. No appendix. Stop and wait.
-
-### Step 3 — Take the answer, then the next one.
-
-Act on the answer (or record the hold), then present the next blocker as its own
-Step 2 nugget. Repeat until the queue is empty.
+Act on the answer, record it in the work record, then present the next card.
+Repeat until the queue is empty.
 
 ## Hard Rules
 
-- **One blocker per message.** Stacking defeats the entire protocol.
-- **Lead with the decision, not the backstory.** Backstory is one sentence, max.
+- **True human gates only.** A fake decision costs the operator the same
+  attention as a real one.
+- **One decision per message.** "And also…" is banned.
+- **Lead with the decision**, not the backstory. Backstory is one sentence.
 - **Plain language.** If an intelligent non-programmer would not know a term,
   explain it in the same breath or cut it. No unexplained acronyms, no internal
-  nicknames, no configuration syntax quoted at a human.
+  nicknames, no configuration syntax.
 - **Never assume recall.** Name things by what they do.
-- **Always recommend**, with one line of why. A decision is easier to make
-  against a default, and the operator can always override it.
-- **Count honestly.** One blocker still gets the announcement line.
-- **Do not manufacture blockers.** If you are cleared to act — a safe patch,
-  opening a pull request without merging, any read-only check — act, and say you
-  did. A fake decision costs the operator the same attention as a real one.
-- **Presentation, not withholding.** Everything reaches them, sequenced.
+- **Always recommend**, with one line of why.
+- **Count honestly.** One gate still gets "1 of 1".
+- **Evidence on every card.** Never ask about a state one cheap safe probe
+  could verify.
+- **Never ask for a secret in chat.** Name where the operator enters it.
+- **Presentation, not withholding.** Every real gate reaches the operator,
+  sequenced.
 
-## Writing the Nugget
+## Closing the Turn
 
-Two failure modes, both common.
+No reply ends with a loose end the operator must interpret: an open issue, "one
+thing to know", "I did not do X", "you may want to", or a caveat with no action.
+Close each loose end in one of three ways:
 
-**Too much context.** The nugget becomes a status report and the decision is
-buried in paragraph three. The operator reads it as work, not as a question.
+1. **Fix it now.** Do not ask "Do you want me to...?" for in-scope work.
+2. **Give it to a named owner** that runs without the operator: a worker the
+   agent launches, an existing automation, or a work record an existing process
+   picks up. Record the owner, the record and the resume condition. Report it in
+   one short line.
+3. **Make it a `Decision needed:` card**, only at a true human gate, one at a
+   time.
 
-**Too little translation.** The nugget is short but written in agent vocabulary,
-so it is short *and* unanswerable.
+End each reply with one simple sentence: either what happens next and when, or
+that the session is wrapped up and can be archived. Claim a wrap-up only when no
+decision is open and every loose end is fixed or owned. Work continues in the
+same session by default; write no hand-off prompt unless the session truly
+cannot continue.
+
+## Writing the Card
+
+Two failure modes are common.
+
+**Too much context.** The card becomes a status report and the decision hides
+in paragraph three. The operator reads it as work, not as a question.
+
+**Too little translation.** The card is short but in agent vocabulary, so it is
+short *and* unanswerable.
 
 The self-check before sending:
 
 > Could the operator answer this from first principles, right now, without
 > opening the codebase and without remembering our last session?
 
-If no, it is still jargon. Cut it down further.
+If no, it is still jargon. Cut it further.
 
-### Example — the same blocker, badly and well
+### Example — the same situation, badly and well
 
 Badly:
 
 ```text
 PR #412 on the tileproxy refactor is blocked on the CDN egress question —
-we're at 4.2TB/mo on the current plan and the overage tier kicks in at 5TB.
-Also #418 needs your call on the auth scope. Want me to proceed?
+we're at 4.2TB/mo and overage kicks in at 5TB. Also #418 needs your call on
+auth scope, and should I upload build 22 to internal testing? Want me to
+proceed?
 ```
 
-Well:
+Well (the internal upload is done without asking; the auth-scope item was a
+technical choice the agent made itself):
 
 ```text
-🚦 2 blockers are waiting on you. Ready to go through them one at a time?
-```
+Uploaded test build 22 to internal testing. Testers can install it now.
 
-then, after the go:
+Decision needed (1 of 1): Move to the bigger hosting plan now, or wait.
 
-```text
-**What this is.** The map images our app serves to users are getting close to
-the traffic limit on our current hosting plan. Above that limit we start paying
-per gigabyte.
+What this is: The map images our app serves are close to the traffic limit on
+our current hosting plan. Above the limit we pay per gigabyte.
+Evidence: Verified: the hosting dashboard shows 4.2 of 5 TB used this month.
+Options:
+- Move now (recommended): the bigger plan costs less than two months of
+  overage at current growth.
+- Wait: cheaper if traffic flattens after the seasonal peak.
+Where: hosting console, billing page, "Change plan". This is a payment, so
+you confirm it yourself.
 
-**The decision.** Move to the bigger plan now, or wait and pay overage if we
-cross the line.
-
-- **Move now (recommended)** — the bigger plan costs less per month than two
-  months of overage at our current growth.
-- **Wait** — cheaper if traffic flattens out, which it might after the seasonal
-  peak.
+This session waits for your plan decision and continues the map work meanwhile.
 ```
 
 ## Required Inputs
 
-- `blockers`: the list of gated items gathered during the work.
-- `operator_state`: optional. Whether the operator has already agreed to go
-  through the queue.
+- `items`: the gated items gathered during the work.
+- `gate_list`: the operator's current true human gates and standing authority.
+- `operator_state`: optional. Whether the operator has asked to go through the
+  queue now or later.
 
 ## Required Outputs
 
-- One announcement line with an honest count.
-- Then, on a go, one nugget per message, in the shape above.
-- A record of each answer, so a later session can see what was decided and why.
+- One card per message, in the shape above, with labelled evidence.
+- A one-line note for each non-gate item the agent did or handed to an owner.
+- A durable record of each answer in the work record, so a later session sees
+  what was decided and why.
+- A closing sentence that states the next step or the wrap-up.
 
 ## Ordering the Queue
 
 Order by consequence to the operator, not by your convenience:
 
-1. anything that is blocking other work right now;
+1. anything that blocks other work right now;
 2. anything time-sensitive, where waiting removes an option;
 3. anything irreversible;
 4. everything else.
 
-If two blockers are genuinely one decision, merge them into one nugget and say
-so. If a blocker turns out to be answerable from a rule the operator already
-gave you, it is not a blocker — apply the rule and move on.
+If two gates are one decision, merge them into one card and say so.
 
 ## Installation Recipe
 
-An agent installing this skill should:
-
-1. Create a skill, command, or standing instruction named `operator-blocker` in
+1. Create a skill, command or standing instruction named `operator-blocker` in
    the host's normal location.
-2. Set its trigger description to fire on gated decisions, end-of-task wrap-ups
-   that list gated items, and any phrasing the operator uses for "walk me
-   through the blockers".
-3. Store the protocol, the hard rules, and the self-check as the instructions.
-4. Adapt the vocabulary and the announcement line to the operator's own words.
-   Keep the sequencing rules unchanged — they are the skill.
-5. Wire it to whatever surface the operator actually reads, and record answers
+2. Set its trigger to fire on true human gates, end-of-task wrap-ups that still
+   hold one, and the operator's phrasing for "walk me through the blockers".
+3. Write the operator's gate list and standing authority into the instructions,
+   adapted to their projects and which ones are in production.
+4. Store the filter, the escalation order, the protocol, the hard rules, the
+   close rule and the self-check.
+5. Adapt the vocabulary to the operator's own words. Keep the filter and the
+   sequencing rules unchanged; they are the skill.
+6. Wire it to the surface the operator actually reads, and record answers
    somewhere durable.
 
 ## Smoke Test
 
-1. Give the agent a task that ends with three gated decisions.
-2. Confirm the first message is a single line with the count and nothing else.
-3. Confirm nothing further arrives until you answer.
-4. Answer, and confirm exactly one nugget arrives.
-5. Confirm the nugget names nothing by identifier, states one decision, and
-   leads with a marked recommendation and one line of why.
-6. Answer it, and confirm the second nugget arrives only then.
-7. Add a fourth item the agent is already cleared to do. Confirm it is done
-   rather than presented as a decision.
+1. Give the agent a task that ends with three items: an internal test upload, an
+   extra repair cycle, and a production deploy.
+2. Confirm the upload is done and reported in one line, the repair cycle goes to
+   the 10th-man reviewer, and only the production deploy becomes a card.
+3. Confirm the card shows `Decision needed (1 of 1):`, labelled evidence, a
+   marked recommendation and one line of why, and names nothing by identifier.
+4. Give it two real gates. Confirm the second card arrives only after the first
+   answer.
+5. Make the upload fail through the first route. Confirm the agent tries the
+   other agent routes before it asks the operator, and that the final card names
+   the exact page, file and control with evidence of each failed route.
+6. Add a gate the operator already executed. Confirm the probe catches it and no
+   card is shown.
+7. Add a credential step. Confirm the card names where to enter it and never
+   asks for the value in chat.
 8. Say "later" mid-queue. Confirm the queue is held, unblocked work continues,
-   and there is no follow-up nagging.
+   there is no nagging, and the reply ends by saying the session waits.
+9. Confirm a wrap-up is claimed only when no card is open and every loose end
+   is fixed or owned.
 
 ## Redaction
 

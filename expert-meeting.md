@@ -1,27 +1,39 @@
 # Expert Meeting Skill Specification
 
-This document defines a reusable expert meeting skill. It is intentionally provider-agnostic, model-agnostic, account-agnostic, and machine-agnostic.
+This document defines a reusable expert meeting skill. It is provider-agnostic, model-agnostic, harness-agnostic, account-agnostic, and machine-agnostic.
 
-The skill can be implemented by any capable LLM agent that can call one or more LLMs through whatever local interface is available and write structured artifacts.
+Any capable LLM agent that can call one or more LLM routes through a local interface (a subscription CLI, a harness-native subagent, a local model server) and write structured artifacts can implement it.
 
-It is the companion to the `code-review-panel` skill. The two share the same two-expert conversation pattern. The difference is that `expert-meeting` works on any non-code topic, without a repository, diff, implementation phase, or verification phase.
+It is the companion to the `expert-code-review-panel` skill. The two share the same two-expert conversation pattern. `expert-meeting` works on any non-code topic, with no repository, diff, implementation phase, or verification phase. A strategic decision (product, market, operations, partnership, hiring, architecture direction) is its main use.
 
-> **Doctrine version: 2026-08-19.** Any model name, tier, or effort label in
-> this repository is a worked example with a shelf life. Re-verify against
-> current documentation before you install.
+> **Doctrine version: 2026-10-20.** Expert seats are now chosen by route tier
+> from one machine-readable routing config, not by brand or by an effort cap.
+> The meeting states the decision as one testable question, labels evidence,
+> and ends with one actionable recommendation. Re-verify routes before you
+> install.
 
 ## Contract
 
-- Freeze the context before any expert speaks, and record who or what produced
-  the material under discussion.
-- Two experts, two genuinely different families where the stack allows, neither
-  from the family that authored the material.
-- First takes stay independent. No expert reads another's take first.
-- Preserve dissent. A meeting that always converges is not a meeting.
-- Resolve routes, identifiers, and effort from the host's routing config, never
-  from memory. Cap effort at high unless the user states a need.
+- State the decision as one testable question with owner, deadline,
+  constraints, and irreversible effects. Then freeze the context and record who
+  or what produced the material.
+- Two experts on independent routes, from different model families where the
+  stack allows, neither from the family that authored the material.
+- Resolve seats, identifiers, and effort from the routing config, never from
+  memory. Report the config version in the artifacts.
+- Expert seats use the demanding-work route, or the frontier reserve for
+  high-stakes or irreversible decisions. Frontier routes run at high effort or
+  above; to save cost, move work to a cheaper route instead of downshifting.
+- Mechanical units (evidence collection, classification, formatting) go to the
+  fast low-cost worker tier. Worker output never grades itself.
+- First takes stay independent. Label every material claim as `Verified`,
+  `Observed`, `Inferred`, or `Unconfirmed`.
+- Preserve dissent. A meeting that always converges is suspect.
+- End with one recommended action, its expected result, its key risk, and its
+  next check or cheap probe.
 - Advice only. This skill never acts on its own conclusions.
-- Every artifact lands on a durable path before the meeting reports done.
+- Every artifact lands on a durable path with a provenance label (timestamp,
+  model, effort) before the meeting reports done.
 
 ## Skill Identity
 
@@ -33,16 +45,18 @@ Use this skill when the user asks for:
 
 - an expert meeting;
 - a two-expert panel on a decision or topic;
+- a strategy panel on a product, market, operating, partnership, hiring, or architecture decision;
 - a structured two-model discussion;
 - an adversarial/dissenting view on a strategy, plan, product, hire, policy, or design direction;
 - a high-confidence recommendation before committing to a non-code decision.
 
-If the topic involves a repository, branch, commit, PR, patch, or working tree, use `code-review-panel` instead. Use `expert-meeting` for strategy, research, planning, product, writing, hiring, financial, architectural, legal, operational, or any other decision topics where structured multi-model disagreement is useful and no code review or implementation is required.
+If the topic involves a repository, branch, commit, PR, patch, or working tree, use `expert-code-review-panel` instead. Use `expert-meeting` for strategy, research, planning, product, writing, hiring, financial, architectural, legal, operational, or any other decision topics where structured multi-model disagreement is useful and no code review or implementation is required.
 
 ## Non-Negotiable Constraints
 
-- Do not depend on any specific LLM provider, model, account, API, product, machine, path, or subscription.
-- Use the strongest available LLMs for the task. Frontier models are preferred for high-stakes meetings; strong local models are acceptable when that is what is available.
+- Do not depend on any specific LLM provider, model, account, API, product, harness, machine, path, or subscription.
+- Run on subscription CLIs and harness-native subagents. Do not use a metered pay-per-token API for meeting work.
+- Pick seats by tier (see Route Tiers). Strong local models are acceptable when they are what the host has.
 - Prefer two genuinely different models for Expert A and Expert B, ideally from different model families, vendors, training pipelines, or inference stacks. The point is cross-model disagreement: different training data, post-training, tool behavior, and failure modes make the panel more valuable.
 - If two genuinely different models are not available, use two meaningfully independent execution contexts. If only one LLM is available, run two fresh independent passes with different roles and state this limitation in the recap.
 - Freeze context before asking for expert opinions, and record the origin of the
@@ -51,10 +65,17 @@ If the topic involves a repository, branch, commit, PR, patch, or working tree, 
 - Resolve routes, model identifiers, and effort settings from the host's
   machine-readable routing config where one exists. Never from memory. An unknown
   or retired identifier fails fast.
-- Cap reasoning effort at the host's normal high tier unless the user states a
-  need for a higher tier in this specific case.
-- Exclude a route from the material by hosting jurisdiction and provider data
-  policy, not by vendor reputation. Record any skip as a meeting limitation.
+- Take effort from the routing config. Frontier routes run at high effort or
+  above. Do not lower a frontier route's effort to save tokens; give the unit to
+  a cheaper tier instead.
+- Send sensitive material only to routes the config clears for sensitive data.
+  Decide that by hosting jurisdiction and provider data policy, not by vendor
+  reputation. Record any skip as a meeting limitation.
+- A route the config marks as advisory-only may add input, but it never fills an
+  expert seat or the final skeptical review.
+- When a route hits a usage limit, take the config's declared fallback. Do not
+  switch providers outside the config to evade the limit. Record the
+  substitution as a meeting limitation.
 - Keep the first expert takes independent. Expert B must not see Expert A's first take before producing its own first take.
 - Never act on the meeting's conclusions automatically. This skill produces advice, not actions.
 - Redact secrets before writing prompts, responses, transcripts, recaps, or logs.
@@ -76,15 +97,30 @@ active expert work as failed solely because a short generic timeout elapsed.
 
 The skill should work with these inputs, using defaults when the user does not provide them:
 
-- `topic`: meeting question or goal. Required. No default.
+- `topic`: meeting question or goal. Required. No default. The runner restates it as one testable decision question.
+- `decision_frame`: decision owner, deadline, constraints, and irreversible effects. Default: ask the expert seats to infer them and mark them `Inferred`.
 - `context`: optional background as inline text, file references, URLs, or notes. Default: empty.
 - `rounds`: discussion round budget. Default: 3 for a normal meeting, 10 for a high-stakes meeting.
 - `outdir`: artifact directory. Default: a dated subdirectory under a project-level expert-panels directory.
-- `expert_a`: first LLM execution route. Default: strongest available discussion-capable route.
-- `expert_b`: second LLM execution route. Default: strongest independent or dissent-capable route.
+- `stakes`: `normal` or `high`. Default: `normal`. `high` puts the expert seats on the frontier reserve.
+- `expert_a`: first route. Default: the config's demanding-work route (frontier reserve when `stakes` is `high`).
+- `expert_b`: second route. Default: an independent route of the same tier from a different model family.
 - `dissent_expert`: adversarial reviewer role. Default: Expert B, or Expert A in a fresh adversarial context.
 
-An LLM execution route can be any local shell-invokable CLI, local model server wrapper, subscription CLI, self-hosted model interface, or agent facility that accepts a prompt and returns a response. The skill should not care how the route is backed.
+An LLM execution route can be any subscription CLI, harness-native subagent, local model server, or self-hosted model interface that accepts a prompt and returns a response. The skill does not care how the route is backed.
+
+## Route Tiers
+
+Describe every seat by role. The routing config maps roles to concrete routes.
+
+| Role | Tier | Used for |
+|---|---|---|
+| Expert A, Expert B | demanding-work route; frontier reserve for high stakes | independent takes, discussion, synthesis |
+| Dissent expert, final skeptical review | an independent route of at least the expert tier, not the author's family | adversarial critique, final status |
+| Evidence and formatting units | fast low-cost worker tier (harness-native subagents) | gathering and summarizing cited material, classifying claims, rendering artifacts |
+| Orchestrator | daily-driver route | running the workflow, writing artifacts, reporting |
+
+The orchestrator verifies every worker-tier result before it enters the frozen context.
 
 ## Required Outputs
 
@@ -103,20 +139,20 @@ Artifacts must contain enough information to understand what was discussed, what
 
 ## Workflow
 
-1. Parse the topic and resolve the context.
+1. Restate the topic as one testable decision question. Record owner, deadline, constraints, and irreversible effects. Resolve seats from the routing config and record its version.
 2. Create the artifact directory.
-3. Freeze the context before the first expert turn.
+3. Gather only the evidence this decision needs (worker tier), label each material claim, and freeze the context before the first expert turn.
 4. Run Expert A independent take.
 5. Run Expert B independent take without showing Expert A's first take.
 6. Ask one expert to synthesize an initial recommendation.
 7. Ask the dissent expert to attack the recommendation adversarially.
 8. Alternate Expert A and Expert B discussion turns until both converge or the round budget is exhausted.
-9. Ask one expert to produce a final consensus recommendation.
+9. Ask one expert to produce a final consensus with one recommended action, its expected result, its key risk, and its next check or cheap probe.
 10. Ask the dissent expert for a final skeptical review with an explicit status: `RECOMMEND`, `DO NOT RECOMMEND`, or `NO CONSENSUS`.
 11. Write `raw.jsonl`, `discussion.md`, `recap.md`, and optional HTML artifacts.
-12. Report status, artifact paths, recommendation, dissent, and next actions.
+12. Preserve the artifacts on a durable path and report status, recommendation, dissent, next actions, and artifact paths.
 
-No code is written. No files outside the artifact directory are modified. No external systems are mutated.
+No code is written. No files outside the artifact directory are modified. No external systems are mutated. If the recommendation leads to a code change, that change goes through the normal review and merge gates of its repository; this meeting is not a review.
 
 ## Context Freeze
 
@@ -126,7 +162,8 @@ Capture at least:
 - any background text the user provided;
 - referenced files or URLs, summarized in-line when sufficient and cited when not;
 - the user's stated constraints, goals, preferences, and assumptions;
-- the decision deadline or urgency if known.
+- the decision owner, deadline, and irreversible effects;
+- an evidence label (`Verified`, `Observed`, `Inferred`, `Unconfirmed`) for each material claim.
 
 Cap frozen context aggressively so expert prompts remain readable. A useful rule of thumb:
 
@@ -153,8 +190,8 @@ Use `[REDACTED_SECRET]` or a similarly obvious placeholder. Redaction must happe
 
 Write `raw.jsonl` as newline-delimited JSON. Recommended event kinds:
 
-- `freeze`: topic, context summary, sources cited, assumptions recorded.
-- `turn`: speaker, step, round, prompt, response, timestamp, execution route label, return status, duration.
+- `freeze`: decision question, decision frame, context summary, sources cited, evidence labels, routing config version.
+- `turn`: speaker, step, round, prompt, response, timestamp, route role, route identifier, effort, return status, duration.
 - `summary`: final status, convergence, recommendation, dissent, next actions, artifact paths.
 
 Prompts and responses in `raw.jsonl` must be redacted.
@@ -290,6 +327,7 @@ Topic: <topic>
 
 Include:
 - the recommendation in one paragraph;
+- one recommended action, its expected result, its key risk, and its next check or cheap probe;
 - key tradeoffs;
 - agreed next actions, ordered;
 - what would change the recommendation if new evidence appeared;
@@ -339,13 +377,19 @@ If RECOMMEND, list the residual risks and the conditions under which the recomme
 # Expert Meeting Recap: <topic>
 
 Status: RECOMMEND / DO NOT RECOMMEND / NO CONSENSUS
-Artifacts: <artifact directory>
+Decision question: <one testable question>
+Generated: <ISO 8601 timestamp> by <orchestrator model>, <effort>
+Seats: <role -> route, effort> (routing config <version>)
+Limitations: <single-family fallback, skipped routes, substitutions, or "none">
+Artifacts: <durable artifact directory>
 
 ## Executive Summary
 <one paragraph with the recommendation or the reason none was reached>
 
 ## Recommendation
 <the agreed recommendation, or "no consensus" with unresolved disagreements>
+
+Action: <one action> · Expected result: <...> · Key risk: <...> · Next check: <...>
 
 ## Tradeoffs
 <main tradeoffs the panel weighed>
@@ -362,16 +406,16 @@ Artifacts: <artifact directory>
 
 ## Final User Response
 
-The final answer to the user should be concise and lead with the result:
+The final answer to the user is short, uses plain active sentences, and leads with the result:
 
 - status: `RECOMMEND`, `DO NOT RECOMMEND`, or `NO CONSENSUS`;
-- the one-sentence recommendation;
+- the one-sentence recommendation and its next check;
 - the top two or three tradeoffs;
 - any preserved dissent;
 - the next actions, ordered;
 - artifact paths.
 
-Do not paste the full transcript unless the user asks for it.
+Do not paste the full transcript unless the user asks for it. If the recommendation needs a decision that only the user can make, state it as one explicit decision with the recommended answer. Do not leave open loops for the user to interpret.
 
 ## Installation Recipe (implementation-agnostic)
 
@@ -382,20 +426,22 @@ An LLM installing this skill on a fresh system should:
    prompt, tool, or agent-config location for that harness.
 2. Implement a runner that:
    - accepts the inputs above;
-   - invokes two independent LLM execution routes via whatever local CLI or wrapper is available (no SDK imports, no direct API calls);
+   - resolves seats from the host's routing config by role and tier, and fails fast on an unknown or retired identifier;
+   - invokes two independent routes through subscription CLIs or harness-native subagents (no SDK imports, no metered API calls);
    - enforces the workflow, prompts, convergence rule, redaction, and artifact layout above;
-   - writes `raw.jsonl`, `discussion.md`, and `recap.md`, plus optional HTML renders.
-3. Pick two genuinely different LLM routes by default and record which routes were used in every run's artifacts. Allow per-invocation overrides.
+   - writes `raw.jsonl`, `discussion.md`, and `recap.md`, plus optional HTML renders, to a durable directory with provenance labels.
+3. Map the roles in Route Tiers to local routes in the routing config. Record which routes were used in every run's artifacts. Allow per-invocation overrides.
 4. Document how to add more routes, how to pass context inline or by file reference, and how to run a smoke test without spending real model calls.
-5. Do not import any LLM provider SDK. Shell out to local CLIs only.
+5. Do not import any LLM provider SDK. Use local CLIs or harness-native subagents only.
 
-The runner may share code with the `code-review-panel` runner; in fact, doing so is encouraged so the two skills stay consistent.
+The runner may share code with the `expert-code-review-panel` runner; in fact, doing so is encouraged so the two skills stay consistent.
 
 ## Companion Skills
 
 - `expert-code-review-panel.md` — same two-expert pattern over a repository with evidence freeze, optional implementation, and verification.
+- `tenth-man.md` — independent challenge of a single decision or process exception.
 - `content-presentation.md` — how the rendered `discussion.html` and `recap.html` artifacts should be surfaced when the user asks to see a meeting outcome.
 
 ## Smoke Test
 
-The skill should ship a smoke-test mode that substitutes deterministic synthetic responses for each expert, runs the full workflow on a fixture topic, and writes artifacts. The smoke test must not require network access or real model calls, and must fail loudly if any step of the workflow (context freeze, independent takes, synthesis, adversarial critique, discussion, consensus, final skeptical review, artifact writes) is skipped.
+The skill should ship a smoke-test mode that substitutes deterministic synthetic responses for each expert, runs the full workflow on a fixture topic, and writes artifacts. It asserts that the recap has a decision question, evidence labels, one recommended action with a next check, a provenance line, and the routing config version. The smoke test must not require network access or real model calls, and must fail loudly if any step of the workflow (context freeze, independent takes, synthesis, adversarial critique, discussion, consensus, final skeptical review, artifact writes) is skipped.
