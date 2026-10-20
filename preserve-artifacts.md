@@ -70,14 +70,17 @@ One rule decides what happens to a refused secret file:
   location, and any scratch or temp file that this task did not create). It stays in place, the package fails, and the report names the
   path. Never arm a wipe on a permanent file unless the user separately and
   explicitly asks for that file to expire (`file-self-destruct.md`).
+- A file that `file-self-destruct.md` has armed or cancelled is not this
+  skill's to delete. Leave it in place, exclude it, and report its path and
+  current state.
 - A **transient** file is a scratch file that this task created inside the
-  `<transient root>` of `file-self-destruct.md`. Import it there and bind it with
-  the `file-self-destruct.md` bind sequence (creation cookie on an
-  `O_NOFOLLOW` descriptor), then shred it in place with "destroy now", with
-  verification, before the skill returns. A missing cookie means refuse and
-  report. If the shred fails, arm a wipe for it through the
-  `file-self-destruct.md` import path and report the failure. A
-  task-created scratch file outside that root counts as permanent. Intake into
+  `<transient root>` of `file-self-destruct.md`, with no armed job and no
+  cancel record. Arm it there through the
+  import path, so its identity is bound (guarantee G1), then use "destroy
+  now" before the skill returns. The outcome follows guarantee G3: verified
+  gone, or kept with a verified armed job, or a loud failure report; never
+  silently unarmed. A task-created scratch file outside that root counts as
+  permanent. Intake into
   the managed store happens only when the operator asked to store that value.
 
 ## Durable Targets
@@ -89,7 +92,7 @@ Choose the most suitable durable location:
 | Source, docs or config that belong in the product | Commit in version control, on a branch that outlives the worktree |
 | Small final deliverables for the operator | `<artifact vault>` in a durable documents folder |
 | Bulky evidence: builds, logs, screenshots, recordings | `<work volume>/<evidence area>` |
-| Sensitive material | Not this skill. Refuse it and report the path by name. A transient scratch secret is shredded in place with verification (`file-self-destruct.md`) before return; intake only when the operator asked to store that value. A permanent user file stays in place, the package fails, and the path is reported. Never arm a wipe on a permanent file unless the user separately and explicitly asks for that file to expire (`file-self-destruct.md`). |
+| Sensitive material | Not this skill. Refuse it and report the path by name. An armed or cancelled file (`file-self-destruct.md`) is left in place and reported. A transient scratch secret with no armed job and no cancel record is shredded in place with verification (`file-self-destruct.md`, guarantees G1 and G7) before return; intake only when the operator asked to store that value. A permanent user file stays in place, the package fails, and the path is reported. Never arm a wipe on a permanent file unless the user separately and explicitly asks for that file to expire (`file-self-destruct.md`). |
 
 When in doubt, preserve a copy in the artifact vault and report the vault
 manifest path.
@@ -134,12 +137,11 @@ evidence, not decoration.
    excluded member by name in the manifest is allowed only for non-secret
    refusals (for example a symbolic link). On a secret or credential hit, do
    not report success while the raw file remains: for a transient scratch
-   file, bind it with the `file-self-destruct.md` bind sequence (creation
-   cookie on an `O_NOFOLLOW` descriptor; a missing cookie means refuse and
-   report), then shred it in place with verification ("destroy now") before
-   you return; if the shred fails, arm a wipe for it through the
-   `file-self-destruct.md` import path and report the failure; and call intake only when the operator
-   asked to store that value; for a permanent user file
+   file with no armed job and no cancel record, arm it through the
+   `file-self-destruct.md` import path (guarantee G1; on any identity doubt,
+   refuse, leave the file in place and report it) and use "destroy now"
+   before you return, with the guarantee G3
+   outcome; call intake only when the operator asked to store that value; for a permanent user file
    (for example a project environment file), leave it in place, fail that
    package, and report the path by name. Never arm a wipe on a permanent file
    unless the user separately and explicitly asks for that file to expire

@@ -159,10 +159,10 @@ or window. Do not also copy the file's content into the chat.
 1. Choose a slug from the topic (for example `nightly-digest`,
    `q1-revenue-report`, `migration-plan`).
 2. Write the HTML to a fresh path:
-   - reviewable page: the location the review tool expects. If that location
-     is inside a repository working directory, confirm before the write that
-     the folder is git-ignored, or point the tool at a temp directory.
-     Rendered data must never enter a commit;
+   - reviewable page: only under a temp directory or the artifact vault.
+     Refuse a destination inside any repository work tree, even a git-ignored
+     folder, because a force-add, a negation rule or a nested repository can
+     still commit it. Point the review tool at that location;
    - harness artifact: the location the harness expects;
    - plain page: `<temp dir>/<slug>-YYYY-MM-DD-HHMM.html`.
 3. Add the provenance footer (see the template).

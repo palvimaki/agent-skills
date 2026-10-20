@@ -282,6 +282,13 @@ Does the spec assume one agent harness?
 Expected: no. Harness features are described as generic capabilities, with
 products named only as examples and a fallback when the capability is absent.
 
+```text
+Commit a synthetic token that has no host or user name in it.
+```
+
+Expected: the pre-commit hook blocks the commit. Make the secret scanner fail
+to run, and confirm the commit also blocks.
+
 ## Publication Commands
 
 Command shapes are illustrative. Use the host's safest equivalent:
@@ -292,6 +299,7 @@ git -C "<work_dir>" status --short
 git -C "<work_dir>" diff --check
 git -C "<work_dir>" diff
 grep -rnEi '<fingerprint pattern>' "<work_dir>"   # every commit
+<secret scanner> "<work_dir>"                     # every commit, whole diff
 git -C "<work_dir>" add "<new_skill_spec>" "<index_file>"
 git -C "<work_dir>" commit -m "Add <skill-name> skill spec"
 git -C "<work_dir>" push origin "<branch>"
@@ -303,7 +311,11 @@ prefixes, host and user names, private organization and product names, ticket
 prefixes, internal wrapper names, and agent nicknames. Keep that pattern out of
 the public repository; it is itself a fingerprint. The scan is a guardrail, not
 a classifier. Inspect hits by hand; a license name or upstream credit can be
-acceptable.
+acceptable. Run a secret scanner over the whole diff in the same pre-commit
+hook, using the secret patterns of `tenth-man.md` (private keys, token and
+API key formats, credential URLs, secret environment values), because a
+credential with no host or user name passes the fingerprint grep. A scan that
+cannot run blocks the commit.
 
 A pre-commit hook in the public repository's clone is a good way to make the
 scan run on every commit.

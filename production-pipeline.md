@@ -223,7 +223,10 @@ axes: standalone implementability, internal consistency, codebase truth, seam
 placement, testability, ticketability and scope. Every finding is a pasteable
 edit with severity `blocking` or `recommended`. Verdict: GO, GO-with-edits or
 NO-GO. The operator dispositions only findings that change product intent; the
-agent applies technical edits itself. One round only.
+agent applies technical edits itself. Then the cold reader reads the edited
+spec once more; its second verdict is GO only when no blocking edit remains.
+The operator sees the list of applied edits before ticketing, so a product
+change cannot pass as a technical edit.
 
 ### Stage 5 — To-tickets
 
@@ -371,9 +374,9 @@ and a clean revision or a recorded allowed sweep skip (see `visual-review.md`), 
 fail-closed deploy-workflow check evaluated on a temporary merge of the
 recorded base and head SHAs, and a merge method that pins both SHAs.
 This pipeline adds one condition: where the work has `operator-feel` scope, a
-feel green light recorded for the build of the head being merged. A later
-commit that changes an `operator-feel` flow voids the green light and needs a
-new feel pass. If CI or review is pending, monitor the PR until it
+feel green light that names the head SHA being merged, from an operator-only
+channel (`tenth-man.md`). Any later commit voids it and needs a new feel
+pass. If CI or review is pending, monitor the PR until it
 merges or a blocker appears; that is part of the task.
 
 Report state precisely: `preview`, `tested`, `merged`, `released`. A merged
@@ -496,7 +499,8 @@ A correct installation passes all of these on a toy repository:
 3. To-spec publishes a spec with all required sections that cites at least one
    research finding.
 4. Spec review runs in a context that lacks the design conversation and returns
-   a verdict with pasteable edits.
+   a verdict with pasteable edits; a second cold read of the edited spec
+   returns GO before ticketing.
 5. To-tickets publishes at least 2 tickets with correct blocking edges and
    labels per the ladder.
 6. Implement completes two toy tickets without pausing, and posts a `preview`

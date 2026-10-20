@@ -145,7 +145,11 @@ theirs.
    account through the host's secret channel before the walk. The executor
    never signs in. For session checks, prepare a second pre-authenticated
    profile and let the executor switch between them. Credentials never appear
-   in the brief, report, logs or stored entry point.
+   in the brief, report, logs or stored entry point. Every frame passes a
+   redaction stage that the executor cannot bypass before the model or the log
+   sees it. Without such a stage, do not open any step that can show a
+   credential. A frame that shows a secret stops the run; that frame and every
+   log holding it are discarded, and the test credential is rotated.
 5. **Triage the output.** Sweep results are observations, not verdicts. One
    route with the whole picture de-duplicates, verifies each observation against
    its screenshot, discards what the artifact does not support, and ranks the
@@ -381,6 +385,9 @@ spec re-enters the loop and the new code is reviewed again.
    are removed.
 10. Grep the report, brief, logs and stored entry points for credential and
     token material, including tokens in captured URLs. Confirm no hits.
+11. Show a synthetic secret on a fixture page. Confirm the frame is redacted
+    before the model sees it; without a redaction stage, confirm the run
+    stops, the logs are discarded and the test credential is rotated.
 
 ## Redaction
 

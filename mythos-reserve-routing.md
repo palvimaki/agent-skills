@@ -251,6 +251,12 @@ with your current frontier model and say:
 > terms and CLIs. Re-derive the four tiers, the review ladder and the phase
 > dates. Keep the roles and rules intact.
 
+The update never edits the live routing config. It opens a reviewed change
+(a PR) for the config. Protected keys (repository profile, sensitive-data
+clearance, ladder order, rung identity, fallbacks, and the review, merge and
+human-gate keys) also need an operator record for that head, as in
+`tenth-man.md`. The live file stays as it is until that change merges.
+
 Re-deriving the routing from these principles is a frontier task: framing,
 judgment and economics. A few minutes of it pay off across every dispatch that
 follows.
@@ -289,7 +295,8 @@ Audit your setup for each of these:
 4. **Routing config:** keep one machine-readable file that maps task types to
    provider, model identifier, effort, fallbacks and reviewer roles, with a
    version string. Every skill defers to it on conflict. The dispatch layer
-   fails fast on an unknown identifier.
+   fails fast on an unknown identifier. Declare its protected-key list (see
+   `tenth-man.md`); without that list, no autonomous merge runs.
 5. **Data eligibility:** record in the config which routes are ineligible for
    which data, and why (hosting jurisdiction, provider data policy, contract).
 6. Add a one-line pointer to the skill in each agent's global instructions.

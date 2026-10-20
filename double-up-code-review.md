@@ -33,16 +33,19 @@ dismiss them.
   merge. The fix is a new head, so it needs a new ladder round.
 - An unconfirmed advisory finding becomes a recorded follow-up with the reason.
   Silent dismissal is not triage.
-- Parse advisory output exactly as `tenth-man.md` parses ladder output: any
-  P0/P1 finding entry (not a negated sentence), also under a `GO` line or in a
-  timed-out partial, enters triage
-  and blocks until the owner confirms it or a fresh non-author ladder reviewer
-  agrees to dismiss it. Only an advisory failure, timeout or missing verdict
-  with no P0/P1 finding entry is a recorded limitation, and only that never holds the
-  merge past the advisory stage limit. On a limit kill, read the retained
-  partial output before the merge decision; any retained P0/P1 finding entry stays
-  in triage. Record a limitation without reading output only when the process
-  produced no output file.
+- Parse advisory output exactly as `tenth-man.md` parses ladder output: a
+  bracketed P0/P1 line, or any other P0/P1 severity claim in any format, also
+  under a `GO` line or in a timed-out partial, enters triage and blocks until
+  the owner confirms it or a fresh non-author ladder reviewer agrees to
+  dismiss it. Only a sentence that clearly states the absence of findings is
+  benign.
+- The advisory reviewer appends and syncs each finding to its output file
+  before it continues. After a limit kill, wait until the output file is
+  closed, then read it; any retained P0/P1 claim stays in triage. A missing
+  output file after a kill is `BLOCKED` until a fresh advisory run finishes.
+  Only a finished run, or a closed output file, with no P0/P1 claim is a
+  recorded limitation that never holds the merge past the advisory stage
+  limit.
 - Sensitive material goes only to an advisory route cleared for sensitive data.
   If none is cleared, skip the advisory review and record it.
 - Read-only. No edits, merges or deploys from this skill.
@@ -145,9 +148,10 @@ One combined review:
 5. Run the advisory review with its own stage time limit. It may run in
    parallel with the ladder round.
 6. Parse the advisory output with the `tenth-man.md` parse, including partial
-   and timed-out output and P0/P1 finding entries under a `GO` line (a
-   negated sentence is not a finding). Every P0/P1 finding entry enters step 7.
-   A missing verdict with no P0/P1 finding entry is a recorded limitation.
+   and timed-out output and any P0/P1 claim under a `GO` line. Every P0/P1
+   claim enters step 7. A closed output file with no verdict and no P0/P1
+   claim is a recorded limitation; a missing output file after a kill is
+   `BLOCKED`.
 7. Triage every advisory P0/P1 against the code. Confirm it with evidence, such
    as a failing test, a reproduced path or a cited line, or send it to that
    fresh ladder reviewer with the reason the owner thinks it is not real.
@@ -173,8 +177,9 @@ One combined review:
     advisory run has no undismissed P0/P1.
 
 Merge stays with the orchestrator under the canonical merge checklist in
-`tenth-man.md` (After the Verdict: Merge). This skill adds no merge condition
-of its own beyond the `BLOCKED` status above.
+`tenth-man.md` (After the Verdict: Merge). That checklist carries the
+advisory-finding item: no merge while any advisory P0/P1 is pending, unfixed
+or undismissed. This skill adds no other merge condition.
 
 ## Evidence Freeze
 
@@ -301,8 +306,8 @@ Use a temporary repository with no private data.
 ## What Not To Do
 
 - Do not let an advisory GO stand in for a ladder verdict.
-- Do not let an advisory failure, timeout or missing verdict with no P0/P1
-  finding entry hold the merge past the advisory stage limit.
+- Do not let an advisory failure, timeout or missing verdict whose closed
+  output holds no P0/P1 claim hold the merge past the advisory stage limit.
 - Do not dismiss an advisory P0/P1 without a triage record.
 - Do not count an in-session review as the independent gate review.
 - Do not show one reviewer's output to another before both verdicts exist.
