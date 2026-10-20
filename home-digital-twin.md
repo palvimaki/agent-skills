@@ -156,7 +156,9 @@ tubes render hollow and see-through).
   one conversion point to the engine's order. Test it with an asymmetric scale.
 - After each shell change: check that furniture stays inside rooms and nudge it
   out of walls automatically. Ceiling-mounted items take their height from the
-  exact roof plane.
+  room's generated ceiling surface at their position, as an absolute height:
+  the flat ceiling `F + ceiling`, or the roof face of their cell polygon. Apply
+  the storey floor offset `F` exactly once.
 
 ### Phase 4 — Light, views, walkability
 
@@ -244,6 +246,8 @@ cheaper workers for asset modelling and catalogue reading.
 - A valley fixture with faces `z = 3 - x` (footprint x < 0) and `z = 3 + x`
   (footprint x > 0): the roof is 4 m high at x = ±1 and 3 m at the valley
   line x = 0 — not 2 m at the edges.
+- A ceiling fixture in a room with a flat 2.5 m ceiling under a 4 m roof hangs at
+  2.5 m; a fixture under a sloped roof face follows that face at its position.
 - A walker can pass the door; a walk into a wall triggers the stuck hint; the
   rescue key works.
 - A test catalogue with three sofas cycles in place; the narrowest keeps the
