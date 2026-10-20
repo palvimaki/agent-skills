@@ -294,30 +294,15 @@ cannot mask each other:
 - **Spec** — does the diff implement the newest spec: anything missing, extra
   or wrong?
 
-The merge gate is the **review ladder**: an ordered list of independent
-reviewer routes per repository profile, kept in the routing config.
+The merge gate is the **review ladder** defined in `tenth-man.md`. That spec is
+the single source for round rules, verdict parsing, repair rounds, the security
+axis and sensitive-data routing. In short: one fresh independent reviewer per
+seat, bound to the exact head SHA; only P0/P1 block; P2/P3 become recorded
+follow-ups.
 
-- One fresh, independent reviewer per round. A reviewer is never the author.
-- On a single-review profile, the first parseable verdict decides. On a production profile, every peer seat that started (frontier, secondary, security) must finish, and a P0/P1 from any seat blocks. Output with no parseable verdict is a
-  procedural failure: move to the next reviewer at once. A reviewer marked
-  unavailable is skipped without waiting.
-- Only P0 and P1 findings block. P2 and P3 findings become recorded
-  non-blocking follow-ups with an owner.
-- Batch all blocking findings into ONE fix spec. Prescriptions are hypotheses:
-  cheap-probe each before speccing it. After a repair, a reviewer with a prior
-  GO reviews the delta; the reviewer that gave the NOGO reviews the full diff.
-- An actual NOGO blocks. A later reviewer never overrides it.
-- Every verdict binds to the exact head SHA. A new commit needs a new review.
-- Review stages have time limits. A stalled reviewer is a procedural failure.
-
-**The security axis runs alongside, not inside.** Production apps and
-external repositories need a separate security-axis review from a reviewer
-cleared for the material: exploitability, trust boundaries, auth bypass,
-injection and deserialization, races with a security consequence, secret
-exposure and unsafe failure states. It keeps its own findings, its own verdict
-and identity-bound evidence. Sensitive diffs go only to reviewers cleared for
-sensitive data. A missing or unavailable required axis never passes; it never
-falls back to the author's route.
+For this pipeline, batch all blocking findings into ONE fix spec. Prescriptions
+are hypotheses: cheap-probe each before speccing it. The repair is a new head
+and gets a full review under the `tenth-man.md` repair rule.
 
 A same-session review by a different model family inside the harness is a
 useful advisory extra. It is not a merge gate. See `tenth-man.md` and
@@ -364,34 +349,14 @@ build, the screenshot trail and a one-paragraph "what to feel-test" note.
 
 ### Merge and release
 
-The orchestrator merges its own PR autonomously when all of these hold for the
-current head SHA:
-
-- a fresh GO from an independent reviewer, plus the security-axis GO where
-  required;
-- passing required checks;
-- no branch-protection rejection;
-- for production and user-facing work, a visual sweep `PASS` whose build
-  identity equals the head being merged; missing, stale, failed or incomplete
-  sweep evidence blocks the merge;
-- if the diff touches a gate spec or the review, merge or operator-gate keys of
-  the routing config, an operator decision record that names this head SHA;
-- the feel green light, where the work has `operator-feel` scope.
-
-Merge with a fail-closed head guard, for example
-`gh pr merge <N> --match-head-commit <sha>`. Never use an admin bypass. If CI or
-review is pending, monitor the PR until it merges or a blocker appears; that is
-part of the task. Stop and record the blocker when a required check fails, a
-review requests changes, branch protection rejects the SHA, or checks stay
-pending past the deadline.
-
-Before the merge, read the target branch's deploy workflows and record the
-result. Merge autonomously only when that check shows the base branch cannot
-start a production deploy or a store release. A merge that can start one is a
-**publish step**: it needs the operator. A missing, unreadable or uncertain
-check stops the merge and becomes an operator decision. A PR that weakens a review, merge or operator gate needs its own
-operator decision record; detect it by path and key, not by the PR
-description, and a missing record blocks the merge.
+The orchestrator merges its own PR autonomously under the **canonical merge
+checklist** in `tenth-man.md` (After the Verdict: Merge): every started seat
+finished with no P0/P1, required checks, branch protection, a sweep pass bound
+to the artifact and a clean revision, the gate-weakening record, the recorded
+fail-closed deploy-workflow check, and the `--match-head-commit` head guard.
+This pipeline adds one condition: the feel green light, where the work has
+`operator-feel` scope. If CI or review is pending, monitor the PR until it
+merges or a blocker appears; that is part of the task.
 
 Report state precisely: `preview`, `tested`, `merged`, `released`. A merged
 change on the development target is not released.

@@ -105,8 +105,14 @@ Secret intake, in principle:
    store's index. The index never holds a value.
 4. Verify that each stored copy exactly matches the extracted value, and that
    the loader resolves it, without printing the value.
-5. Only then shred the original: overwrite it, then unlink it. Refuse to shred
-   a path inside the store or on the canary allowlist.
+5. Only then shred the original, and only when one of these holds: the stored
+   bytes are a complete copy of the whole file, or the user has confirmed that
+   the unextracted remainder can be destroyed. On a partial extract without
+   that confirmation, keep the original, arm no wipe, and report what the
+   original still holds (by field name, never by value). Shred by the Path
+   Safety rules below. Refuse to shred a path inside the store or on the
+   canary allowlist. A failed overwrite leaves the file in place and is
+   reported.
 6. Report names, destinations, and loader variables. Never the value.
 
 If the user asks to keep the original, skip step 5, leave that path in place
@@ -263,5 +269,17 @@ Deterministic and offline:
 Also assert that the helper refuses a path inside the managed store and a path
 on a fixture canary allowlist.
 
+Path-attack fixtures. Each case must refuse the wipe, leave the foreign target
+byte-identical, and keep the job armed and reported:
+
+- the target is a symbolic link to a foreign file;
+- a parent directory is a symbolic link outside the trusted prefixes;
+- the target is replaced by a different inode between arm and wipe;
+- the target has a second hard link (link count 2).
+
+Intake fixture: a file with two secrets where the user asks to store one.
+Assert that the original is kept, no wipe is armed, and the report names the
+remaining field.
+
 The smoke test requires no network access. It verifies permissions, scheduling,
-firing, and traceless cleanup only.
+firing, traceless cleanup, path safety and the intake keep rule.

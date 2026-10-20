@@ -88,9 +88,11 @@ Rules for the tiers:
 1. **Harness-native subagents are the fast tier's home.** Many harnesses can
    spawn a subagent on a named cheaper model inside the interactive session, on
    subscription quota. Use that for read-mostly work instead of an inherited
-   frontier worker. A same-family fast subagent may see the same material as
-   its parent, so it is also the cheap worker for sensitive material that
-   external routes must not see.
+   frontier worker. Model family is not a data clearance: a native subagent can
+   run on a different endpoint with a different region, log or retention
+   policy. Send sensitive material to a subagent only when the routing config
+   marks that exact route cleared for that data class, the same check that
+   reviewers get.
 2. **Escalate on evidence, not on retry.** On a failed acceptance check or an
    unclear task, move the unit up one tier. Do not retry the same tier
    unchanged. A task that is plainly hard may start on the frontier reserve.
@@ -175,22 +177,13 @@ The table shows roles. The concrete models live in the `<routing config>`.
 
 Reserving the frontier model must not mean less review.
 
-- **One fresh, independent reviewer per round.** The reviewer is never the
-  author and never the session that wrote the code. Each repository profile has
-  an ordered `<review ladder>`.
-- **On a single-review profile, the first parseable verdict decides.** On a production profile, every peer seat that started (frontier, secondary, security) must finish, and a P0/P1 from any seat blocks. Only P0 and P1 findings block. P2 and
-  P3 findings become recorded follow-ups that do not block.
-- **No verdict is never a GO.** Output without a parseable verdict, a wrapper
-  error or a timeout is a procedural failure. Move to the next reviewer on the
-  ladder at once. Skip a reviewer marked unavailable without waiting. When the
-  ladder is exhausted, the gate blocks. It never falls back to the frontier
-  reserve or to the author's family.
-- **A separate security axis** for production apps and external repositories,
-  with its own prompt, its own verdict and identity-bound evidence. Sensitive
-  diffs go only to reviewers cleared for that data, by hosting jurisdiction and
-  data policy, not by vendor reputation.
-- **Exact head SHA.** Every review binds to the current head. A review of an
-  older head does not apply.
+- **The review ladder in `tenth-man.md` is the merge gate.** That spec is the
+  single source for round rules, verdict parsing, repair rounds, the security
+  axis, sensitive-data routing and the canonical merge checklist. In short: one
+  fresh independent reviewer per seat, never the author, bound to the exact
+  head SHA; only P0/P1 block; no verdict is never a GO.
+- **Never fall back to the frontier reserve or to the author's family** when
+  the ladder is exhausted. The gate blocks and the PR waits.
 - **Advisory extras.** A same-session review by a different model family inside
   the harness is useful extra evidence. When the frontier reserve is already the
   orchestrator, its own read of the final diff is also additive. Neither is a

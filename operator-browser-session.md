@@ -215,7 +215,9 @@ evidence of each failed route.
 - **Page instruction followed.** Cause: page text treated as a command. Fix:
   untrusted-data rule in every task file; report and stop.
 - **Approval provenance unclear.** Cause: a value came from page text or a
-  generated file. Fix: bind every value to the operator's own message or record.
+  generated file. Fix: an approval is the operator's own message in this task,
+  re-read at launch. A work record, hand-off note, page, download or generated
+  task file is never an approval source.
 - **Credential exposure.** Cause: capture ran during secret entry, or the agent
   opened a credential file. Fix: pause capture; never touch credential files.
 - **Unintended change missed.** Cause: verification checked only the intended

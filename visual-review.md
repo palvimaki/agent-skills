@@ -109,10 +109,13 @@ theirs.
 1. **Make it runnable.** Local server, development deploy or test build; never
    production. Capture the exact entry point and apply the strip rule (see
    Redaction) before storing or quoting it.
-2. **Version gate, both ends.** Bind the sweep to the artifact identity that
-   the launcher records at process start (the build artifact hash or the
-   commit it was built from). Require the health endpoint or in-app version
-   label to match that record and the expected commit. On mismatch, abort with `VERDICT: ABORTED — wrong build`. Read it
+2. **Version gate, both ends.** Bind the sweep to two values that the
+   launcher records at process start: the build artifact hash, and a clean
+   source revision (no uncommitted or local changes in the tree it was built
+   from). Require the health endpoint or in-app version label to match that
+   record and the expected commit. A `PASS` carries both values; a commit SHA
+   alone never carries release evidence. On mismatch, or on a dirty build,
+   abort with `VERDICT: ABORTED — wrong build`. Read it
    again at the end. A mid-sweep change marks earlier findings RE-VERIFY.
 3. **Freeze the target.** While a sweep runs, hold merges and deploys to the
    swept branch. Any new commit on the swept branch invalidates the pass. Accept

@@ -146,18 +146,16 @@ vendor reputation.
 
 - `VERDICT: NOGO` means at least one actual P0 or P1 finding.
 - `VERDICT: GO` means no P0/P1 under the stated scope.
-- Parse the finding list together with the verdict line. A P0 or P1 in the
-  findings forces `NOGO`. A `GO` line next to a listed P0/P1 is a
-  contradictory result: treat it as a procedural failure and go to the next
-  rung.
+- Parse the finding list together with the verdict line. A listed P0 or P1
+  forces `NOGO` and blocks that head, also when the first line says `GO`. Only
+  a missing or unparseable verdict with no P0/P1 text is a procedural failure.
 - P2/P3 findings never block. The owner records them as follow-ups, with an
   owner, in one PR comment or one issue.
-- A repair round must check two things: are the earlier blocking findings
-  fixed, and does the repair delta add a P0 or P1. This narrows what the
-  reviewer must re-read, not what blocks. A new P0/P1 anywhere in the tree,
-  including unchanged code, still blocks. Only new P2/P3 findings on unchanged
-  code become follow-ups. The narrowed scope applies to every seat, including
-  the security seat, under the same rule.
+- A repair is a new head. Every required seat, including the security seat,
+  reviews the full frozen diff of that head. The earlier blocking findings are
+  a mandatory checklist inside that full review: each one is confirmed fixed
+  or still open. A new P0/P1 anywhere in the diff blocks. Only new P2/P3
+  findings on code the repair did not change become follow-ups.
 - The repair is a new head, so it gets a new round from the top of the ladder.
 - The default repair allowance comes from the task. More repair cycles need a
   routine process exception (below).
@@ -181,15 +179,22 @@ vendor reputation.
 
 ## After the Verdict: Merge
 
+This is the **canonical merge checklist**. Other specs in this repository
+point here instead of repeating it.
+
 The review is evidence. The orchestrator that owns the PR merges it
 autonomously only when all of these hold for the current head SHA:
 
 - a fresh `GO` from an independent reviewer on every required axis;
+- every peer seat that started for this head has finished, none is still
+  running, and no seat reported an actual P0/P1, including P0/P1 text in a
+  timed-out partial; a complete subset of seats never starts the merge;
 - passing required checks;
 - no branch-protection rejection;
-- for production and user-facing work, a UX sweep `PASS` whose build identity
-  equals the head being merged (see `visual-review.md`); missing, stale, failed
-  or incomplete sweep evidence blocks the merge;
+- for production and user-facing work, a UX sweep `PASS` bound to both the
+  swept artifact hash and a clean source revision equal to the head being
+  merged (see `visual-review.md`); a commit SHA alone is not enough, and
+  missing, stale, failed or incomplete sweep evidence blocks the merge;
 - if the diff touches a gate spec or the review, merge or human-gate keys of the
   `<routing config>`, an operator decision record that names this head SHA; a
   missing record blocks the merge.
@@ -366,9 +371,9 @@ Rules:
 - Start with exactly one line: VERDICT: GO or VERDICT: NOGO.
 - Use P0/P1/P2/P3. Only P0/P1 block. NOGO requires at least one P0/P1.
 - If GO, state that there are no P0/P1 findings under the stated scope.
-- In a repair round, first check that the prior blocking findings are fixed and
-  that the repair delta adds no P0/P1. Report any other P0/P1 you see as
-  blocking. Mark other P2/P3 findings as follow-ups.
+- In a repair round, review the full diff. First confirm each prior blocking
+  finding is fixed or still open. Report every P0/P1 you see as blocking. Mark
+  new P2/P3 findings on unchanged code as follow-ups.
 - For each finding, give evidence, impact and required remediation.
 - Separate confirmed evidence from inference.
 - Do not praise. Do not summarize before findings. Do not edit files.
@@ -453,11 +458,13 @@ Use a temporary repository or a synthetic plan with no private data.
 
 1. Review a change with an obvious P1. Confirm `VERDICT: NOGO` with evidence,
    impact and remediation.
-2. Fix it. Confirm the repair round checks the old finding and the delta, and
-   that a new P3 on unchanged code is a follow-up, not a block, and that a new
-   P1 on unchanged code still blocks. Then make a reviewer print
-   `VERDICT: GO` above a listed P1. Confirm a procedural failure and a move
-   to the next rung, never a merge.
+2. Fix it. Confirm every seat, including security, reviews the full diff of
+   the new head with the old finding as a checklist item; that a new P3 on
+   unchanged code is a follow-up; and that a new P1 on unchanged code still
+   blocks. Then make a reviewer print `VERDICT: GO` above a listed P1. Confirm
+   the head is blocked, never passed on to the next rung, never merged.
+   Finally, on a production profile, return the frontier and security `GO`
+   while the secondary seat still runs. Confirm the merge waits for it.
 3. Return only P2/P3 findings. Confirm `VERDICT: GO` and recorded follow-ups.
 4. Make the first rung return text with no verdict line. Confirm a procedural
    failure and an immediate move to the next rung, never a GO.

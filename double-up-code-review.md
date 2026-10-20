@@ -138,17 +138,17 @@ One combined review:
    - `BLOCKED` when the ladder returned NOGO on any axis, or when triage
      confirmed an advisory P0/P1;
    - `NO VERDICT` when the ladder round has no verdict;
-   - `APPROVED` only when every required axis has a `GO` and no finding list
-     on any axis contains a P0 or P1.
+   - `APPROVED` when the ladder returned `GO` on every required axis, with no
+     ladder P0/P1, and every advisory P0/P1 has a disposition: confirmed (then
+     the status is `BLOCKED`) or not confirmed and recorded with a reason. An
+     unconfirmed advisory finding never leaves the status undefined.
 9. Write or post the combined review. Record P2/P3 follow-ups with an owner.
 10. After a fix, start again at step 1 with the new head. Run Double-Up again
     only if the risk reason still applies.
 
-Merge stays with the orchestrator under the rules in `tenth-man.md`: fresh GO
-on every required axis, passing checks, no branch-protection rejection, a UX
-sweep pass bound to the merged head for production and user-facing work, an
-operator decision record for any gate-weakening diff, a fail-closed head guard
-and a deploy-workflow check.
+Merge stays with the orchestrator under the canonical merge checklist in
+`tenth-man.md` (After the Verdict: Merge). This skill adds no merge condition
+of its own beyond the `BLOCKED` status above.
 
 ## Evidence Freeze
 
