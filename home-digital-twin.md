@@ -89,9 +89,10 @@ the phone in one walk.
 
 ### Phase 1 — Plan (vector, not raster)
 
-1. Register all scans to one frame (choose +X = main facade). Fit each roof or
-   sloped-ceiling plane once as `z = a + b*x + c*y`, and record the lines where
-   planes meet (ridge, hips, valleys).
+1. Register all scans to one frame (choose +X = main facade). Describe the roof
+   as **roof faces**: each face is a footprint polygon in plan plus its plane
+   `z = a + b*x + c*y`, fitted once from the scan. Adjacent faces meet along a
+   ridge, hip or valley line, which is a footprint edge.
 2. Extract RoomPlan wall lines and object boxes; slice the LiDAR mesh at several
    heights (furniture height and just under the ceiling).
 3. Author `plan.json`: per floor an **outline**; **rooms** as rectangles of inner
@@ -103,8 +104,8 @@ the phone in one walk.
    before building anything.
 
 **Supported geometry.** The cell-stack builder below covers walls on two
-perpendicular axes (most apartments and houses), flat ceilings and any number of
-planar roof slopes. At intake, list walls that are diagonal or curved. Handle
+perpendicular axes (most apartments and houses), flat ceilings and roofs made of
+any number of planar roof faces (gables, hips, valleys, dormers). At intake, list walls that are diagonal or curved. Handle
 them explicitly: either rotate the grid locally (cells in a second frame for
 that wing) or model those walls as separate extruded wall pieces that cut the
 neighbouring cells. Do not silently snap them to the axes.
@@ -112,11 +113,12 @@ neighbouring cells. Do not silently snap them to the axes.
 ### Phase 2 — Shell (cell stacks)
 
 Collect every rectangle edge into grid lines. Then clip each cell, as a convex
-polygon, by every plane-intersection line (ridge, hip, valley) and every line
+polygon, by every roof-face footprint edge (ridge, hip, valley) and every line
 where a roof plane crosses a key height (floor levels, ceilings, door heads) that
-passes through it. The result is a set of convex **cell polygons**; inside each
-one, one roof plane is lowest and no comparison between a roof plane and a fixed
-height changes sign. Axis-parallel lines keep the cells rectangular; a diagonal
+passes through it. The result is a set of convex **cell polygons**; each one lies
+inside exactly one roof-face footprint, and that face's plane is its roof (never
+"the lowest plane", which turns a valley into a ridge). Inside a cell polygon no
+comparison between its roof plane and a fixed height changes sign. Axis-parallel lines keep the cells rectangular; a diagonal
 line splits a cell into, for example, a triangle and a pentagon. Floors,
 ceilings and roof faces are emitted as these polygons (triangulated), and walls
 along their edges as vertical quads. Every grid
@@ -237,8 +239,11 @@ cheaper workers for asset modelling and catalogue reading.
 - A sloped-roof fixture with one slope along x and one along y (for example
   `z1 = 3 + x` and `z2 = 3.5 - y` over a unit square): their meeting line
   `x + y = 0.5` splits the square into a triangle and a pentagon; the ceiling
-  faces cover the square exactly once (no gap, no overlap) and follow the lower
-  plane on each side of one straight edge.
+  faces cover the square exactly once (no gap, no overlap), each side follows
+  its own roof face, and they meet along one straight edge.
+- A valley fixture with faces `z = 3 - x` (footprint x < 0) and `z = 3 + x`
+  (footprint x > 0): the roof is 4 m high at x = ±1 and 3 m at the valley
+  line x = 0 — not 2 m at the edges.
 - A walker can pass the door; a walk into a wall triggers the stuck hint; the
   rescue key works.
 - A test catalogue with three sofas cycles in place; the narrowest keeps the
