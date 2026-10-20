@@ -16,8 +16,11 @@ UI-driving capability, and read that worker's report can implement it.
 ## Contract
 
 - Runs on every production patch, including backend-only work, and on all
-  user-facing development work. Skip it only for non-production work with no
-  user-facing surface, and announce that skip. No other skip exists.
+  user-facing development work. Two skips exist, and each is recorded and
+  announced, never shown as a pass: non-production work with no user-facing
+  surface, and a headless production service with no user interface at all
+  (a recorded headless skip). Any product with a user interface gets the full
+  sweep.
 - Never against production. A local server, a development deploy, or a
   simulator or test build.
 - Evidence binds to the exact build. A mismatch at the start aborts the sweep.
@@ -54,8 +57,10 @@ Use this skill when:
 - an orchestrator has no UI-driving capability and must delegate the walk.
 
 Skip it only for non-production work with no user-facing surface, such as
-documentation or internal tooling that does not ship. Announce the skip: a
-silently skipped gate looks identical to a passed one.
+documentation or internal tooling that does not ship, or record a headless
+skip for a production service that has no user interface at all. Announce the
+skip and record it separately from a pass: a silently skipped gate looks
+identical to a passed one.
 
 ## The Problem This Solves
 

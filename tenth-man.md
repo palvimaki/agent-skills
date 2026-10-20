@@ -25,9 +25,10 @@ such as an extra repair cycle or a deadline extension.
 - The reviewer comes from the repository's ordered `<review ladder>` in the
   machine-readable `<routing config>`. Never pick a reviewer from memory.
 - On a single-review profile, the first parseable verdict decides. On a
-  production profile, every peer seat that the profile declares must finish
-  or be skipped with a recorded reason after its whole ladder was tried, and a
-  P0/P1 from any seat blocks. A later reviewer never overrides an actual P0/P1.
+  production profile, the frontier and security seats are required: each must
+  finish with a parseable verdict, or the round has `NO VERDICT`. The optional
+  secondary seat must finish, or end with a recorded limitation after its
+  whole ladder was tried. A P0/P1 from any seat blocks. A later reviewer never overrides an actual P0/P1.
 - Only P0 and P1 block. P2 and P3 become recorded, non-blocking follow-ups.
 - Output with no parseable verdict, a timeout, a quota stop or a route error
   is a procedural failure. It is never a GO. Move to the next rung at once.
@@ -77,11 +78,14 @@ rung names a route, its effort and its stage time limit. Typical profiles:
   ordered fallbacks.
 - **Production profile.** Apps that real users touch, and external
   repositories. Each round has one frontier-tier correctness review and, when
-  available, one secondary review from a different route. A secondary
-  procedural failure tries the next declared secondary rung. The frontier
-  verdict stands alone only after the secondary ladder is exhausted, and only
-  when no seat reported a P0/P1, including P0/P1 text in a timed-out partial.
-  An actual P0/P1 from either reviewer blocks. A separate security-axis review always runs.
+  available, one secondary review from a different route. The frontier seat
+  and the security seat are required seats. The secondary seat is a declared
+  optional seat. A procedural failure on any seat tries that seat's next
+  declared rung. If a required seat exhausts its ladder, the round has `NO
+  VERDICT`. Only the optional secondary seat may end exhausted with a recorded
+  limitation; the frontier verdict then stands alone, and only when no seat
+  reported a P0/P1, including P0/P1 text in a timed-out partial. An actual
+  P0/P1 from any reviewer blocks. A separate security-axis review always runs.
 - **Other repositories.** A repository with no assigned profile uses the
   production profile, including the separate security axis, until the operator
   assigns a profile. Never fall back to a single combined review.
@@ -99,7 +103,7 @@ Round rules:
    running. An actual P0/P1 from any seat blocks the head.
 5. On a procedural failure, record it and go to the next rung of that seat's
    ladder at once.
-6. If every rung fails, the round has `NO VERDICT`. The PR waits with a
+6. If every rung of a required seat fails, the round has `NO VERDICT`. The PR waits with a
    recorded resume condition, and the round runs again later. Reviewer
    availability is not an operator decision. A PR never merges without a
    verdict.
@@ -191,10 +195,13 @@ The review is evidence. The orchestrator that owns the PR merges it
 autonomously only when all of these hold for the current head SHA:
 
 - a fresh `GO` from an independent reviewer on every required axis;
-- every peer seat that the profile declares for this head either finished, or
-  was skipped with a recorded reason (availability record, sensitive-data
-  clearance, or a recorded procedural failure on every rung within the round
-  budget) after its whole ladder was tried; none is still running; and no
+- every required seat (frontier, security) finished with a parseable verdict,
+  on any cleared, available rung; rungs skipped by an availability record or
+  a sensitive-data clearance are allowed on the way. Exhaustion of a required
+  seat is `NO VERDICT`, never a skip. Only the optional secondary seat may
+  end, after its whole ladder was tried, with a recorded limitation
+  (procedural failure, availability record, or no cleared rung). None is
+  still running; and no
   seat reported an actual P0/P1, including P0/P1 text in a timed-out partial.
   A seat that was not started and has no recorded skip blocks the merge;
 - passing required checks;
@@ -207,8 +214,10 @@ autonomously only when all of these hold for the current head SHA:
   merged (see `visual-review.md`). A commit SHA alone is not enough. A taste
   pass, a scoped mid-run pass, or a `PASS` that omits a critical journey is
   incomplete evidence. Missing, stale, failed or incomplete sweep evidence
-  blocks the merge. The only skip is non-production work with no user-facing
-  surface, recorded in the merge record;
+  blocks the merge. The only skips are non-production work with no user-facing
+  surface, and a recorded headless skip for a production service with no user
+  interface (see `visual-review.md`), each recorded in the merge record and
+  never counted as a pass;
 - if the diff touches a path in the declared `<gate paths>` list or the
   review, merge or human-gate keys of the `<routing config>`, an operator
   decision record that names this head SHA and the exact gate paths and keys
@@ -217,19 +226,23 @@ autonomously only when all of these hold for the current head SHA:
   agents cannot write to). A git commit never counts, whatever its author
   identity, because agents often commit under the operator's identity. A record
   that is added by this PR, written by an agent, or quoted from a work record
-  does not count. A missing or unverified record blocks the merge. A missing `<gate
-  paths>` list blocks every merge that touches the `<routing config>` or any
-  skill file;
+  does not count. A missing or unverified record blocks the merge. A missing
+  `<gate paths>` list blocks every autonomous merge. When the list is present,
+  a diff that adds a workflow, hook, merge script or gate runner also needs an
+  operator record that names that new path, whether or not the path is on the
+  list yet;
 
 Rules:
 
 - Merge with a fail-closed head guard, for example
   `gh pr merge <N> --match-head-commit <sha>`. Never use an admin bypass.
-- Before the merge, read the target branch's deploy workflows and record the
-  result together with the base SHA it was read at. Immediately before the
-  head-guarded merge, read the base again. Merge autonomously only when the
-  base SHA is unchanged and the recorded check shows the base branch cannot
-  start a production deploy or a store release. A merge that can
+- Before the merge, evaluate the deploy workflows on the merge result (the
+  head tree, or a temporary merge of head into base), not only on the base,
+  because the PR itself can add or edit a workflow. Record the result with the
+  base SHA and the head SHA. Immediately before the head-guarded merge,
+  re-read the base and re-evaluate the merge result. Merge autonomously only
+  when both SHAs are unchanged and the merge result cannot start a production
+  deploy or a store release. A merge that can
   start one is a publish step and needs the operator's approval. A missing,
   unreadable or uncertain check (an external deploy trigger, a workflow you do
   not recognize) stops the merge and becomes an operator decision.
@@ -514,7 +527,10 @@ Use a temporary repository or a synthetic plan with no private data.
 12. Confirm no output contains absolute local paths, user names, host names,
     credentials or personal identifiers.
 13. Make the deploy-workflow check uncertain (an unknown workflow). Confirm the
-    merge stops and becomes an operator decision.
+    merge stops and becomes an operator decision. Then let the PR itself add
+    a workflow that deploys to production on push. Confirm the check on the
+    merge result blocks the autonomous merge. Then exhaust the security
+    seat's ladder. Confirm `NO VERDICT`, never a skip.
 14. Change a gate path with no decision record, then with a record that the PR
     itself adds, then with a record committed on another branch under the
     operator's git identity. Confirm all three block.

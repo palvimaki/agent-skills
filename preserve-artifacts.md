@@ -70,9 +70,11 @@ One rule decides what happens to a refused secret file:
   location, and any scratch or temp file that this task did not create). It stays in place, the package fails, and the report names the
   path. Never arm a wipe on a permanent file unless the user separately and
   explicitly asks for that file to expire (`file-self-destruct.md`).
-- A **transient** file is a scratch or temp file that this task created. It is
-  intaken or wiped through `file-self-destruct.md`, with verification, before
-  the skill returns.
+- A **transient** file is a scratch file that this task created inside the
+  `<transient root>` of `file-self-destruct.md`. Import it there, then shred it
+  in place with "destroy now", with verification, before the skill returns. A
+  task-created scratch file outside that root counts as permanent. Intake into
+  the managed store happens only when the operator asked to store that value.
 
 ## Durable Targets
 
@@ -83,7 +85,7 @@ Choose the most suitable durable location:
 | Source, docs or config that belong in the product | Commit in version control, on a branch that outlives the worktree |
 | Small final deliverables for the operator | `<artifact vault>` in a durable documents folder |
 | Bulky evidence: builds, logs, screenshots, recordings | `<work volume>/<evidence area>` |
-| Sensitive material | Not this skill. Refuse it and report the path by name. A transient scratch secret gets a verified intake or a verified self-destruct (`file-self-destruct.md`) before return. A permanent user file stays in place, the package fails, and the path is reported. Never arm a wipe on a permanent file unless the user separately and explicitly asks for that file to expire (`file-self-destruct.md`). |
+| Sensitive material | Not this skill. Refuse it and report the path by name. A transient scratch secret is shredded in place with verification (`file-self-destruct.md`) before return; intake only when the operator asked to store that value. A permanent user file stays in place, the package fails, and the path is reported. Never arm a wipe on a permanent file unless the user separately and explicitly asks for that file to expire (`file-self-destruct.md`). |
 
 When in doubt, preserve a copy in the artifact vault and report the vault
 manifest path.
@@ -128,24 +130,30 @@ evidence, not decoration.
    excluded member by name in the manifest is allowed only for non-secret
    refusals (for example a symbolic link). On a secret or credential hit, do
    not report success while the raw file remains: for a transient scratch
-   file, finish a verified intake or a verified self-destruct
-   (`file-self-destruct.md`) before you return; for a permanent user file
+   file, shred it in place with verification (`file-self-destruct.md`,
+   "destroy now") before you return, and call intake only when the operator
+   asked to store that value; for a permanent user file
    (for example a project environment file), leave it in place, fail that
    package, and report the path by name. Never arm a wipe on a permanent file
    unless the user separately and explicitly asks for that file to expire
    (`file-self-destruct.md`). Refuse any path that matches a secret
    pattern: a secret directory, an SSH
    directory, environment files, key, certificate, keystore or
-   credentials-looking names, and every symbolic link. Then scan the file
-   content before the copy, with the secret patterns of `tenth-man.md`
-   (private key blocks, token and API key formats, credential URLs, secret
-   environment values). Refuse the raw file when the scan hits. Preserve a
+   credentials-looking names, and every symbolic link. Then open each file
+   once with `O_NOFOLLOW`, record its device and inode, and scan and copy from
+   that one descriptor, with the secret patterns of `tenth-man.md` (private
+   key blocks, token and API key formats, credential URLs, secret environment
+   values). Hash the bytes read from that descriptor. If the device or inode
+   at the path changes before the copy finishes, fail the preserve. Refuse
+   the raw file when the scan hits. Preserve a
    redacted copy only when the redacted bytes are what the reply cites. If the
    scan cannot run, fail the preserve and report it.
 4. Check that the target location exists. If the work volume or the vault is
    missing, stop and report it. Do not create a mount point. Do not write to the
    system disk instead.
-5. Copy the files, or commit them for version-controlled targets.
+5. Write each copy from the step-3 descriptor; never reopen the path. For a
+   version-controlled target, commit, then verify that the committed blob hash
+   equals the step-3 hash.
 6. Write both manifests with hashes and the provenance label.
 7. Verify that each preserved path exists and each hash matches.
 8. Report the durable path in the final reply. Prefer the preserved path over
@@ -219,13 +227,15 @@ harness to clean.
 2. Confirm the manifest has a hash, a timestamp and `generated_by` with an
    effort value or `effort unknown`.
 3. Include an environment file in the input list. Confirm it is refused. Then
-   include a scratch log that this task created in a temp location, with an
+   include a scratch log that this task created inside the `<transient root>`, with an
    ordinary name, that contains a private key block and a token. Confirm the
    raw file is refused, and that disabling the scanner fails the preserve.
    Confirm that no success is reported while the raw log remains, and that the
-   log ends either intaken or wiped by a verified self-destruct. Then repeat
-   with a project log outside any scratch location: confirm it stays in place,
-   the package fails, and no wipe is armed.
+   log is shredded in place with verification, not intaken. Swap the file for
+   a link between scan and copy, and confirm the preserve fails. Then repeat
+   with a project log outside any scratch location, and with a task-created
+   scratch log outside the root: confirm each stays in place, the package
+   fails, and no wipe is armed.
 4. Include a symbolic link. Confirm it is refused. Then include a project directory outside any scratch location
    that contains a symbolic link and an environment file. Confirm the link is
    excluded and listed by name, that the environment file fails the package (it

@@ -33,7 +33,9 @@ researched routing config.
   merge that starts a production or store release is a publish step for the
   operator.
 - Every production patch, including backend-only work, needs current UX sweep
-  evidence bound to the build. User-facing development work needs it too.
+  evidence bound to the build, except a recorded headless skip for a
+  production service with no user interface (`visual-review.md`). User-facing
+  development work needs it too.
 - The operator gets an early working preview. Preview, tested build, merged and
   released are four distinct states and every report names which one it means.
 - Every loop is bounded. Extra repair cycles and deadline extensions go to an
@@ -319,8 +321,9 @@ Run the sweep (`visual-review.md`) after the review ladder passes. Scope:
 - every production patch, **including backend-only work**: critical journeys
   first, then the full app sweep;
 - all user-facing development work;
-- skip only non-production work with no user-facing surface, and announce the
-  skip.
+- skip only non-production work with no user-facing surface, or a headless
+  production service with no user interface at all (a recorded headless
+  skip); announce each skip and never count it as a pass.
 
 Steps:
 
@@ -358,9 +361,11 @@ build, the screenshot trail and a one-paragraph "what to feel-test" note.
 The orchestrator merges its own PR autonomously under the **canonical merge
 checklist** in `tenth-man.md` (After the Verdict: Merge). Implement that
 checklist itself, not this summary: a fresh `GO` on every required axis,
-including the security axis; every declared peer seat finished or was skipped with a recorded reason, with no P0/P1; required checks, branch protection, a sweep pass bound
-to the artifact and a clean revision, the gate-weakening record, the recorded
-fail-closed deploy-workflow check bound to the base SHA and re-read at merge, and the `--match-head-commit` head guard.
+including the security axis; every required seat (frontier, security) finished with a verdict and the
+optional secondary seat finished or ended with a recorded limitation, with no
+P0/P1; required checks, branch protection, a sweep pass bound to the artifact
+and a clean revision or a recorded allowed sweep skip (see `visual-review.md`), the gate-weakening record, the recorded
+fail-closed deploy-workflow check evaluated on the merge result and re-read at merge, and the `--match-head-commit` head guard.
 This pipeline adds one condition: where the work has `operator-feel` scope, a
 feel green light recorded for the build of the head being merged. A later
 commit that changes an `operator-feel` flow voids the green light and needs a

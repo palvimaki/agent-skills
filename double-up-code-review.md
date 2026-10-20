@@ -38,7 +38,10 @@ dismiss them.
   and blocks until the owner confirms it or a fresh non-author ladder reviewer
   agrees to dismiss it. Only an advisory failure, timeout or missing verdict
   with no P0/P1 text is a recorded limitation, and only that never holds the
-  merge past the advisory stage limit.
+  merge past the advisory stage limit. On a limit kill, read the retained
+  partial output before the merge decision; any retained P0/P1 text stays in
+  triage. Record a limitation without reading output only when the process
+  produced no output file.
 - Sensitive material goes only to an advisory route cleared for sensitive data.
   If none is cleared, skip the advisory review and record it.
 - Read-only. No edits, merges or deploys from this skill.

@@ -23,7 +23,7 @@ HTML can implement it. No LLM API, SDK, or provider dependency is required.
   else is rendered.
 - Never ask which surface. The routing rule decides. When it is ambiguous,
   render, except that a plaintext secret file is never rendered or copied: it
-  opens read-only, and only a redacted substitute is rendered.
+  opens read-only, and the skill writes no HTML for it.
 - Inside the rendered branch, pick the richest surface that is available:
   reviewable page when the user will react to the content, harness artifact or
   side panel when the harness has one, plain browser page otherwise.
@@ -109,7 +109,7 @@ first row and no other.
 
 | Content | Surface |
 |---|---|
-| Plaintext secret file | Open the path read-only under the `file-self-destruct.md` viewing rule (a transient file is its one armed path; a permanent user file opens in place with no wipe armed). Write no HTML and no vault copy that holds secret bytes. If anything is rendered, render only a redacted substitute that contains no secret bytes, and keep it out of the vault. |
+| Plaintext secret file | Open the path read-only under the `file-self-destruct.md` viewing rule (a transient file is its one armed path; a permanent user file opens in place with no wipe armed). Write no HTML and no vault copy. |
 | File on disk with a code or config extension (`.py .js .ts .tsx .jsx .go .rs .swift .kt .java .c .cpp .h .sh .zsh .bash .rb .php .lua .toml .yaml .yml .json .xml .sql .html .css .scss .less .conf .ini .env.example .dockerfile .makefile`) | Text editor |
 | File on disk with a text extension (`.md .mdx .txt .log .rst .org .tex`) | Text editor |
 | Structured data from a database, API, agent, or CLI tool | Rendered |

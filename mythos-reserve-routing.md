@@ -183,7 +183,8 @@ Reserving the frontier model must not mean less review.
   fresh independent reviewer per seat, never the author, bound to the exact
   head SHA; only P0/P1 block; no verdict is never a GO.
 - **Never fall back to the frontier reserve or to the author's family** when
-  the ladder is exhausted. The gate blocks and the PR waits.
+  a required seat's ladder is exhausted. The gate has `NO VERDICT` and the PR
+  waits.
 - **Advisory extras.** A same-session review by a different model family inside
   the harness is useful extra evidence. When the frontier reserve is already the
   orchestrator, its own read of the final diff is also additive. Neither
