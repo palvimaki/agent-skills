@@ -111,16 +111,22 @@ neighbouring cells. Do not silently snap them to the axes.
 
 ### Phase 2 — Shell (cell stacks)
 
-Collect every rectangle edge into grid lines (add the plane intersection lines
-and the lines where each roof plane crosses each key height, so no comparison
-between a roof plane and a fixed height changes sign inside a cell). Every grid
+Collect every rectangle edge into grid lines. Then clip each cell, as a convex
+polygon, by every plane-intersection line (ridge, hip, valley) and every line
+where a roof plane crosses a key height (floor levels, ceilings, door heads) that
+passes through it. The result is a set of convex **cell polygons**; inside each
+one, one roof plane is lowest and no comparison between a roof plane and a fixed
+height changes sign. Axis-parallel lines keep the cells rectangular; a diagonal
+line splits a cell into, for example, a triangle and a pentagon. Floors,
+ceilings and roof faces are emitted as these polygons (triangulated), and walls
+along their edges as vertical quads. Every grid
 cell gets a stack of **air intervals** in absolute heights. Opening heights in
 the plan are local to their storey floor `F` (0 for the ground floor):
 room `[F, F + ceiling]` or `[F, roof]`, door `[F, F + head]`, window
 `[F + sill, F + head]`; solids subtract. Emit:
 
-- a floor quad at the bottom and a ceiling or exact roof quad at the top of each
-  air interval;
+- a floor polygon at the bottom and a ceiling or exact roof polygon at the top of
+  each air interval;
 - a vertical quad wherever one cell's air meets its neighbour's solid;
 - an exterior skin and an exterior roof, so the envelope is closed and the sun
   cannot leak through (cast shell shadows double-sided);
@@ -228,8 +234,11 @@ cheaper workers for asset modelling and catalogue reading.
   gaps, straight edges, a header over the door and reveals in the window.
 - An upper-floor test room on a floor at 3 m with a 2 m doorway: the opening spans
   3–5 m, and its header sits at 5 m.
-- A sloped-roof fixture with one slope along x and one along y: the ceiling quads
-  match both planes, and the line where they meet is one straight edge.
+- A sloped-roof fixture with one slope along x and one along y (for example
+  `z1 = 3 + x` and `z2 = 3.5 - y` over a unit square): their meeting line
+  `x + y = 0.5` splits the square into a triangle and a pentagon; the ceiling
+  faces cover the square exactly once (no gap, no overlap) and follow the lower
+  plane on each side of one straight edge.
 - A walker can pass the door; a walk into a wall triggers the stuck hint; the
   rescue key works.
 - A test catalogue with three sofas cycles in place; the narrowest keeps the

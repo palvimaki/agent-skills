@@ -67,7 +67,7 @@ The LLM will create the skill file, wire up the runner, and (if the spec's smoke
 
 Each file is structured for a human reader. The prompt templates are verbatim. The workflow is numbered. The artifact layout is explicit. A competent engineer can build either panel skill in a few hundred lines of shell or Python that shells out to local CLIs. The content-presentation skill is mostly a routing rule plus a stylesheet and needs no runtime of its own.
 
-## Why these thirteen
+## Why these fourteen
 
 They are the skills I use most often, in this order:
 
@@ -84,6 +84,7 @@ They are the skills I use most often, in this order:
 11. **visual-review** — the gate that keeps the human out of the correctness loop entirely. Everything an attentive observer could catch, an agent catches first, with a screenshot to prove it; the human's scarce judgment is spent only on feel.
 12. **operator-blocker** — the counterpart on the other side of that handoff. Getting the work right is half of it; the other half is asking for a decision in a form a busy human can actually answer in one pass.
 13. **production-pipeline** — the umbrella workflow the other skills serve: spec everything first, let agents iterate to correctness in a bounded inner loop with review and an autonomous visual gate inside it, and reserve the human for the two things only a human can do — the design decisions up front and the feel judgment at the end. Findings become specs before they become code, and nothing re-reviews after the operator's green light.
+14. **home-digital-twin** — the fun one: a walkable 3D model of your own home from phone scans and photos, built from a clean vector plan so the walls and ceilings come out straight, plus a store try-out that puts real, true-size furniture from a store's current catalogue next to your piano at the press of a key.
 
 All are designed to fail safe: no deploys, no external messages, no code changes unless explicitly requested. The single intentional exception is `file-self-destruct`, whose whole purpose is a scoped, single-path deletion of a secret file you asked to expire.
 
