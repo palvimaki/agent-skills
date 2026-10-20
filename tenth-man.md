@@ -10,8 +10,9 @@ and operations. It is the independent judge for routine process exceptions,
 such as an extra repair cycle or a deadline extension.
 
 > **Doctrine version: 2026-10-20.** The merge gate is now an ordered review
-> ladder: one fresh independent reviewer per round, the first parseable verdict
-> decides, and only P0/P1 findings block. Output with no verdict is a
+> ladder: one fresh independent reviewer per seat and round, a parseable verdict
+> decides (on a production profile, after every peer seat finishes), and only
+> P0/P1 findings block. Output with no verdict is a
 > procedural failure, not a NOGO. The 10th man also adjudicates routine process
 > exceptions. Re-check the ladder against your own routing config before you
 > install.
@@ -23,8 +24,9 @@ such as an extra repair cycle or a deadline extension.
   `VERDICT: NOGO`.
 - The reviewer comes from the repository's ordered `<review ladder>` in the
   machine-readable `<routing config>`. Never pick a reviewer from memory.
-- The first parseable verdict in the round decides. A later reviewer never
-  overrides an actual P0/P1 finding.
+- On a single-review profile, the first parseable verdict decides. On a
+  production profile, every peer seat that started must finish, and a P0/P1
+  from any seat blocks. A later reviewer never overrides an actual P0/P1.
 - Only P0 and P1 block. P2 and P3 become recorded, non-blocking follow-ups.
 - Output with no parseable verdict, a timeout, a quota stop or a route error
   is a procedural failure. It is never a GO. Move to the next rung at once.
@@ -83,10 +85,16 @@ rung names a route, its effort and its stage time limit. Typical profiles:
 Round rules:
 
 1. Freeze and redact the evidence. Record the head SHA.
-2. Take the first rung that is available and cleared for this material.
-3. Run it with a fresh context and the frozen evidence only.
-4. Parse the verdict. A parseable `GO` or `NOGO` ends the round.
-5. On a procedural failure, record it and go to the next rung at once.
+2. Take the first rung that is available and cleared for this material. On a
+   production profile, start every peer seat of the round (frontier, secondary,
+   security) as a set. Peer seats are not fallback rungs.
+3. Run each seat with a fresh context and the frozen evidence only.
+4. Parse the verdict. On a single-review profile, a parseable `GO` or `NOGO`
+   ends the round. On a production profile, wait for every peer seat that
+   started. A `GO` from one seat never closes the round while a peer is still
+   running. An actual P0/P1 from any seat blocks the head.
+5. On a procedural failure, record it and go to the next rung of that seat's
+   ladder at once.
 6. If every rung fails, the round has `NO VERDICT`. The PR waits with a
    recorded resume condition, and the round runs again later. Reviewer
    availability is not an operator decision. A PR never merges without a
@@ -169,7 +177,13 @@ autonomously only when all of these hold for the current head SHA:
 
 - a fresh `GO` from an independent reviewer on every required axis;
 - passing required checks;
-- no branch-protection rejection.
+- no branch-protection rejection;
+- for production and user-facing work, a UX sweep `PASS` whose build identity
+  equals the head being merged (see `visual-review.md`); missing, stale, failed
+  or incomplete sweep evidence blocks the merge;
+- if the diff touches a gate spec or the review, merge or human-gate keys of the
+  `<routing config>`, an operator decision record that names this head SHA; a
+  missing record blocks the merge.
 
 Rules:
 
@@ -179,7 +193,8 @@ Rules:
   starts a production deploy or a store release is a publish step. It needs the
   operator's approval.
 - A PR that weakens a review, merge or human gate needs its own operator
-  decision record.
+  decision record. Detect it by path and key, as in the list above, not by the
+  author's description. A reviewer `GO` never replaces the record.
 - If checks or review are still running, monitor the PR until it merges. Stop
   and record the blocker when a required check fails, a review returns NOGO,
   branch protection rejects the SHA, or the task deadline passes.

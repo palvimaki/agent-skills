@@ -10,7 +10,7 @@ coverage. It never approves a merge, and it never blocks a merge on its own
 authority.
 
 > **Doctrine version: 2026-10-20.** The standard gate is now the ordered review
-> ladder in `tenth-man.md`: one fresh reviewer per round, first parseable verdict
+> ladder in `tenth-man.md`: one fresh reviewer per seat and round, parseable verdict
 > decides, only P0/P1 block. Double-Up is an advisory extra on top of that gate.
 > A same-session review by a different model family counts as advisory only.
 
@@ -144,8 +144,10 @@ One combined review:
     only if the risk reason still applies.
 
 Merge stays with the orchestrator under the rules in `tenth-man.md`: fresh GO
-on every required axis, passing checks, no branch-protection rejection, a
-fail-closed head guard and a deploy-workflow check.
+on every required axis, passing checks, no branch-protection rejection, a UX
+sweep pass bound to the merged head for production and user-facing work, an
+operator decision record for any gate-weakening diff, a fail-closed head guard
+and a deploy-workflow check.
 
 ## Evidence Freeze
 

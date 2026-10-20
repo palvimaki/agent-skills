@@ -120,8 +120,9 @@ Rules for the tiers:
 2. **Resolve routes from the config, never from memory.** A remembered
    identifier goes stale silently. A retired one fails at dispatch time. An
    identifier the config does not know fails fast; it never falls through to a
-   default. When the config file is invalid, the reviewed defaults apply and
-   every check reports the error.
+   default. When the config file is missing, unreadable or invalid, dispatch
+   stops and reports the error. Reviewed defaults exist only for the offline
+   smoke test; a live dispatch never uses them.
 3. **Switch off the quota bombs.** Harness features that loop, fan out or
    recurse on their own on the reserve plan can spend a week of quota in one
    prompt. Disable them at the harness level (permission deny rules, removed
@@ -177,7 +178,7 @@ Reserving the frontier model must not mean less review.
 - **One fresh, independent reviewer per round.** The reviewer is never the
   author and never the session that wrote the code. Each repository profile has
   an ordered `<review ladder>`.
-- **The first parseable verdict decides.** Only P0 and P1 findings block. P2 and
+- **On a single-review profile, the first parseable verdict decides.** On a production profile, every peer seat that started (frontier, secondary, security) must finish, and a P0/P1 from any seat blocks. Only P0 and P1 findings block. P2 and
   P3 findings become recorded follow-ups that do not block.
 - **No verdict is never a GO.** Output without a parseable verdict, a wrapper
   error or a timeout is a procedural failure. Move to the next reviewer on the

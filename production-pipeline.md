@@ -298,7 +298,7 @@ The merge gate is the **review ladder**: an ordered list of independent
 reviewer routes per repository profile, kept in the routing config.
 
 - One fresh, independent reviewer per round. A reviewer is never the author.
-- The first parseable verdict decides. Output with no parseable verdict is a
+- On a single-review profile, the first parseable verdict decides. On a production profile, every peer seat that started (frontier, secondary, security) must finish, and a P0/P1 from any seat blocks. Output with no parseable verdict is a
   procedural failure: move to the next reviewer at once. A reviewer marked
   unavailable is skipped without waiting.
 - Only P0 and P1 findings block. P2 and P3 findings become recorded
@@ -371,6 +371,11 @@ current head SHA:
   required;
 - passing required checks;
 - no branch-protection rejection;
+- for production and user-facing work, a visual sweep `PASS` whose build
+  identity equals the head being merged; missing, stale, failed or incomplete
+  sweep evidence blocks the merge;
+- if the diff touches a gate spec or the review, merge or operator-gate keys of
+  the routing config, an operator decision record that names this head SHA;
 - the feel green light, where the work has `operator-feel` scope.
 
 Merge with a fail-closed head guard, for example
@@ -383,7 +388,8 @@ pending past the deadline.
 Before the merge, read the target branch's deploy workflows. A merge that starts
 a production deploy or a store release is a **publish step**: it needs the
 operator. A PR that weakens a review, merge or operator gate needs its own
-operator decision record.
+operator decision record; detect it by path and key, not by the PR
+description, and a missing record blocks the merge.
 
 Report state precisely: `preview`, `tested`, `merged`, `released`. A merged
 change on the development target is not released.

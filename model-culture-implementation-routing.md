@@ -269,7 +269,7 @@ Best when the task needs antagonistic review, merge gating, correctness
 analysis, or independent critique before committing.
 
 Staff it from an ordered `<review ladder>` per repository profile. One fresh
-reviewer per round, never the author. The first parseable verdict decides. Only
+reviewer per round, never the author. On a single-review profile, the first parseable verdict decides. On a production profile, every peer seat that started (frontier, secondary, security) must finish, and a P0/P1 from any seat blocks. Only
 P0 and P1 findings block; P2 and P3 become recorded follow-ups. Output with no
 parseable verdict is a procedural failure, never a GO: move to the next reviewer
 at once, and skip a reviewer marked unavailable without waiting. Every verdict

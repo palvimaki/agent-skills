@@ -114,14 +114,18 @@ theirs.
    commit. On mismatch, abort with `VERDICT: ABORTED — wrong build`. Read it
    again at the end. A mid-sweep change marks earlier findings RE-VERIFY.
 3. **Freeze the target.** While a sweep runs, hold merges and deploys to the
-   swept branch. If a change lands anyway, resolve it with a diff-proof addendum
-   that shows the delta is outside the swept surface, or re-sweep. Never
-   re-verdict silently.
+   swept branch. Any new commit on the swept branch invalidates the pass. Accept
+   a narrower result only from a fresh executor run that records the new head
+   and the new build identity. An addendum written by the delivery owner never
+   carries a pass forward. Never re-verdict silently.
 4. **Dispatch the executor** with the spec and acceptance criteria verbatim,
    the entry point, the build identity, the known-issue list, the artifacts
    directory, the brief below, and the isolation bounds. Where the walk needs
-   authentication, use a seeded test account through the host's secret channel.
-   Credentials never appear in the brief, report, logs or stored entry point.
+   authentication, pre-authenticate the isolated profile with a seeded test
+   account through the host's secret channel before the walk. The executor
+   never signs in. For session checks, prepare a second pre-authenticated
+   profile and let the executor switch between them. Credentials never appear
+   in the brief, report, logs or stored entry point.
 5. **Triage the output.** Sweep results are observations, not verdicts. One
    route with the whole picture de-duplicates, verifies each observation against
    its screenshot, discards what the artifact does not support, and ranks the
@@ -163,7 +167,9 @@ For each state, judge:
 
 Go beyond the happy path:
 - exercise every reachable control on the screens you visit;
-- sign out and sign in again, and check that saved state survives;
+- switch to the second pre-authenticated profile and back, reload, and check
+  that saved state survives (never type a credential; if a sign-in dialog
+  appears, stop and report it);
 - go offline and online again, and check that data stays correct;
 - repeat actions where state could pile up.
 
