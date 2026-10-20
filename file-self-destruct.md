@@ -143,10 +143,17 @@ The deletion mechanism MUST be deterministic, one-shot, surgical, unattended
 Prefer the host's **native scheduler**. Do **not** reach for legacy `cron` by
 reflex:
 
-- **macOS** — a per-user launchd LaunchAgent with a `StartCalendarInterval`
-  (Month + Day + Hour + Minute; Hour + Minute alone repeats daily and fires
-  early for a TTL over 24 hours), plus a fire-after time that the wipe helper
-  checks before it acts, loaded via `launchctl bootstrap gui/<uid> <plist>`. Avoid
+- **macOS** — a per-user launchd LaunchAgent, loaded via
+  `launchctl bootstrap gui/<uid> <plist>`. Prefer a relative trigger (for
+  example a `StartInterval` equal to the TTL with `RunAtLoad` off) over a
+  calendar interval: `StartCalendarInterval` has no year, and launchd runs a
+  missed interval on load. `StartInterval` repeats, so the helper must unload
+  the job on its first run after a verified wipe; this is the only allowed
+  exception to the one-shot rule. Either way, the job carries a fire-after
+  time. On an early wake (now is before fire-after), the helper registers and
+  verifies a new one-shot for the remaining time, then removes the woken job,
+  so exactly one job is armed for the path until a verified wipe. A verified
+  wipe removes every job armed for that path. Avoid
   `cron`: on recent macOS the legacy cron daemon is gated behind a
   privacy / Full-Disk-Access consent prompt, so installing a user crontab can
   surface a permission dialog and, if it is dismissed, the job may **silently
@@ -155,8 +162,7 @@ reflex:
   `systemd-run --user --on-active=10m <wipe helper> <job id>`, where the helper
   applies Path Safety and the teardown order, or `at` with the same helper if
   `atd` is enabled. Never schedule a bare `rm -f <path>`. If the helper's wipe
-  fails, it registers and verifies a replacement timer before it exits (see
-  Path Safety).
+  fails, it follows the wipe-helper exit rule in Path Safety.
 - **Portable fallback** — a detached background process (`setsid` / `nohup` that
   sleeps, then runs the same wipe helper). It does not survive a reboot, and a
   reboot leaves the secret on disk with nothing armed. Use it only when no
@@ -224,6 +230,25 @@ Two early actions exist. Bind each one to an explicit user request:
 
 "Cancel" alone means cancel the wipe. It never deletes the file.
 
+## Threat Model
+
+State the boundary, so implementers and reviewers judge the design against it.
+
+The skill defends against:
+
+- mistakes: a wrong path, a stale path, a forgotten file, a timer that never
+  fires, a wipe that silently fails;
+- other OS users, through owner-only permissions on the file (`0600`); the
+  skill does not change directory permissions, so place the file in a
+  directory that other users cannot read or write;
+- races by other processes that it can detect: a swapped leaf or parent, a
+  replaced inode, an extra hard link, a missed or early timer;
+- a reboot or crash between arm and wipe.
+
+Out of scope: a malicious process that runs as the same OS user. Such a process
+can read the secret directly while it exists, so no wipe design protects
+against it. The OS account is the trust boundary. Do not claim more.
+
 ## Path Safety
 
 Every check works on the resolved path, not on the string the caller gives:
@@ -232,6 +257,14 @@ Every check works on the resolved path, not on the string the caller gives:
   Resolve a symbolic link in a parent directory only when it is a trusted
   system prefix (for example a temp directory that the OS itself links).
   Always refuse a symbolic link at the leaf.
+- Walk the path one component at a time with `openat` and `O_NOFOLLOW` (after
+  the trusted prefix), and hold each directory descriptor. Record the device
+  and inode of each parent. Create or open the leaf relative to the held
+  parent descriptor. At arm time, if any parent changed between the check and
+  the open, shred the file through the descriptor already held, unlink it
+  relative to the held parent, and abort the arm. Use the same walk at wipe
+  time, but there a changed or linked parent means refuse, leave the foreign
+  file byte-identical, keep the job armed, and report.
 - Compare the canonical path with the managed-store root and with the canary
   allowlist, after both are also resolved.
 - Record the file's device and inode when the job is armed.
@@ -247,10 +280,15 @@ Every check works on the resolved path, not on the string the caller gives:
 - A missing path at wipe time is a failed wipe, not a success. Keep the job
   armed and report it. Remove the job only after a verified overwrite of the
   recorded inode and a verified unlink.
-- The wipe helper exits only after a verified wipe or a verified re-arm: if a
-  wipe fails, it registers a replacement job, checks that the scheduler lists
-  it, retries in-process if that check fails, and writes a failure record.
-  The job removes itself only after a verified wipe.
+- The wipe helper never exits with the secret on disk and no verified job. If
+  a wipe fails, it registers a replacement job and checks that the scheduler
+  lists it, retrying in-process. If no replacement job verifies and the open
+  descriptor still matches the recorded device and inode, it overwrites and
+  unlinks through that descriptor before exit, and verifies the inode is gone.
+  If the inode does not match, it leaves the foreign file unchanged, installs
+  the login or boot helper for the recorded path, and exits only after that
+  helper verifies as armed. A failure record alone is a failed run, never an
+  exit condition. The job removes itself only after a verified wipe.
 
 ## What NOT to Do
 
@@ -320,8 +358,14 @@ reported:
   that verified wipe;
 - the target path is missing at wipe time: assert the job stays armed and the
   failure is reported;
-- the replacement job cannot be registered: assert the helper retries and
-  writes a failure record, and does not exit silently.
+- the replacement job cannot be registered: assert the helper retries, then
+  shreds through the matching descriptor and verifies the inode is gone, and
+  never exits with the secret on disk and no verified job;
+- an early wake before the fire-after time: assert a new one-shot is
+  registered and verified for the remaining time, the woken job is removed so
+  exactly one job is armed, and the file is untouched;
+- a parent directory swapped for a link between check and open: assert the
+  arm aborts and no copy of the secret remains on either path.
 
 Intake fixture: a file with two secrets where the user asks to store one.
 Assert that the original is kept, no wipe is armed, and the report names the

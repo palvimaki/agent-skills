@@ -211,11 +211,13 @@ autonomously only when all of these hold for the current head SHA:
   surface, recorded in the merge record;
 - if the diff touches a path in the declared `<gate paths>` list or the
   review, merge or human-gate keys of the `<routing config>`, an operator
-  decision record that names this head SHA. The record counts only when the
-  operator made it through a channel that agents cannot write, or when it was
-  committed outside this PR by the operator's own identity. A record that is
-  added by this PR, written by an agent, or quoted from a work record does not
-  count. A missing or unverified record blocks the merge. A missing `<gate
+  decision record that names this head SHA and the exact gate paths and keys
+  it covers. The record counts only when the operator made it through a channel
+  whose credentials no agent holds (for example a signed approval in a tool the
+  agents cannot write to). A git commit never counts, whatever its author
+  identity, because agents often commit under the operator's identity. A record
+  that is added by this PR, written by an agent, or quoted from a work record
+  does not count. A missing or unverified record blocks the merge. A missing `<gate
   paths>` list blocks every merge that touches the `<routing config>` or any
   skill file;
 
@@ -224,8 +226,10 @@ Rules:
 - Merge with a fail-closed head guard, for example
   `gh pr merge <N> --match-head-commit <sha>`. Never use an admin bypass.
 - Before the merge, read the target branch's deploy workflows and record the
-  result. Merge autonomously only when that recorded check shows the base
-  branch cannot start a production deploy or a store release. A merge that can
+  result together with the base SHA it was read at. Immediately before the
+  head-guarded merge, read the base again. Merge autonomously only when the
+  base SHA is unchanged and the recorded check shows the base branch cannot
+  start a production deploy or a store release. A merge that can
   start one is a publish step and needs the operator's approval. A missing,
   unreadable or uncertain check (an external deploy trigger, a workflow you do
   not recognize) stops the merge and becomes an operator decision.
@@ -512,7 +516,8 @@ Use a temporary repository or a synthetic plan with no private data.
 13. Make the deploy-workflow check uncertain (an unknown workflow). Confirm the
     merge stops and becomes an operator decision.
 14. Change a gate path with no decision record, then with a record that the PR
-    itself adds. Confirm both block.
+    itself adds, then with a record committed on another branch under the
+    operator's git identity. Confirm all three block.
 15. On a production profile, do not start the secondary seat and record no
     skip. Confirm the merge blocks.
 16. Leave sensitivity unclassified. Confirm only cleared rungs run.

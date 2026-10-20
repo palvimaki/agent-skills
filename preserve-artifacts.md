@@ -57,6 +57,23 @@ correct at the moment it is written. A day later, a `clean` step, a branch
 switch or a scheduled cleanup removes the only copy, and the reply now points
 at nothing. Nobody notices until the operator needs the file.
 
+## Threat Model
+
+The skill defends against lost deliverables, secrets copied into durable
+storage by mistake, and silent fallback to the wrong disk. The OS account is the
+trust boundary: a malicious process running as the same user is out of scope.
+
+One rule decides what happens to a refused secret file:
+
+- A **permanent** file is a file the user or the project keeps (a project
+  environment file, a project log, any file outside a scratch or temp
+  location, and any scratch or temp file that this task did not create). It stays in place, the package fails, and the report names the
+  path. Never arm a wipe on a permanent file unless the user separately and
+  explicitly asks for that file to expire (`file-self-destruct.md`).
+- A **transient** file is a scratch or temp file that this task created. It is
+  intaken or wiped through `file-self-destruct.md`, with verification, before
+  the skill returns.
+
 ## Durable Targets
 
 Choose the most suitable durable location:
@@ -66,7 +83,7 @@ Choose the most suitable durable location:
 | Source, docs or config that belong in the product | Commit in version control, on a branch that outlives the worktree |
 | Small final deliverables for the operator | `<artifact vault>` in a durable documents folder |
 | Bulky evidence: builds, logs, screenshots, recordings | `<work volume>/<evidence area>` |
-| Sensitive material | Not this skill. Refuse it and report the path by name. A transient scratch secret gets a verified intake or a verified self-destruct (`file-self-destruct.md`) before return. A permanent user file stays in place, the package fails, and the path is reported; no wipe is armed on it. |
+| Sensitive material | Not this skill. Refuse it and report the path by name. A transient scratch secret gets a verified intake or a verified self-destruct (`file-self-destruct.md`) before return. A permanent user file stays in place, the package fails, and the path is reported. Never arm a wipe on a permanent file unless the user separately and explicitly asks for that file to expire (`file-self-destruct.md`). |
 
 When in doubt, preserve a copy in the artifact vault and report the vault
 manifest path.
@@ -115,7 +132,8 @@ evidence, not decoration.
    (`file-self-destruct.md`) before you return; for a permanent user file
    (for example a project environment file), leave it in place, fail that
    package, and report the path by name. Never arm a wipe on a permanent file
-   the user did not ask to expire. Refuse any path that matches a secret
+   unless the user separately and explicitly asks for that file to expire
+   (`file-self-destruct.md`). Refuse any path that matches a secret
    pattern: a secret directory, an SSH
    directory, environment files, key, certificate, keystore or
    credentials-looking names, and every symbolic link. Then scan the file
@@ -201,12 +219,14 @@ harness to clean.
 2. Confirm the manifest has a hash, a timestamp and `generated_by` with an
    effort value or `effort unknown`.
 3. Include an environment file in the input list. Confirm it is refused. Then
-   include a log with an ordinary name that contains a private key block and a
-   token. Confirm the raw file is refused, and that disabling the scanner
-   fails the preserve. Confirm that no success is reported while the raw log
-   remains, and that the log ends either intaken or wiped by a verified
-   self-destruct.
-4. Include a symbolic link. Confirm it is refused. Then include a directory
+   include a scratch log that this task created in a temp location, with an
+   ordinary name, that contains a private key block and a token. Confirm the
+   raw file is refused, and that disabling the scanner fails the preserve.
+   Confirm that no success is reported while the raw log remains, and that the
+   log ends either intaken or wiped by a verified self-destruct. Then repeat
+   with a project log outside any scratch location: confirm it stays in place,
+   the package fails, and no wipe is armed.
+4. Include a symbolic link. Confirm it is refused. Then include a project directory outside any scratch location
    that contains a symbolic link and an environment file. Confirm the link is
    excluded and listed by name, that the environment file fails the package (it
    stays in place and its path is reported), and that no success is reported.

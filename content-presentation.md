@@ -17,10 +17,13 @@ HTML can implement it. No LLM API, SDK, or provider dependency is required.
 
 - The editor or the rendered page is the delivery. Do not paste the content
   back into the chat.
-- The routing is binary. Source, markdown, text, log, and config files already
-  on disk go to the editor. Everything else is rendered.
+- The routing is binary after one exception: a plaintext secret file always
+  takes the secret route in the Routing rule. Otherwise, source, markdown,
+  text, log, and config files already on disk go to the editor. Everything
+  else is rendered.
 - Never ask which surface. The routing rule decides. When it is ambiguous,
-  render.
+  render, except that a plaintext secret file is never rendered or copied: it
+  opens read-only, and only a redacted substitute is rendered.
 - Inside the rendered branch, pick the richest surface that is available:
   reviewable page when the user will react to the content, harness artifact or
   side panel when the harness has one, plain browser page otherwise.
@@ -34,8 +37,10 @@ HTML can implement it. No LLM API, SDK, or provider dependency is required.
   in the durable documents folder by default; it goes into a repository only on
   the operator's request, after a secret scan and a personal-data pass.
 - Redact secrets from anything rendered, written, or published. The editor path
-  opens an existing file unchanged. For a plaintext secret file, follow
-  `file-self-destruct.md`: read-only, no editor copies, wipe armed.
+  opens an existing file unchanged. For a plaintext secret file, open it
+  read-only with no editor copies under the `file-self-destruct.md` viewing
+  rule. A transient file keeps its armed wipe; never arm a wipe on a permanent
+  user file.
 
 ## Skill Identity
 
@@ -97,8 +102,14 @@ implicitly:
 
 ### Routing rule
 
+Classify the path and the content before you choose a surface. A plaintext
+secret file (an environment file such as `.env`, a key, a credential dump, or
+any file whose content matches the secret patterns in `tenth-man.md`) takes the
+first row and no other.
+
 | Content | Surface |
 |---|---|
+| Plaintext secret file | Open the path read-only under the `file-self-destruct.md` viewing rule (a transient file is its one armed path; a permanent user file opens in place with no wipe armed). Write no HTML and no vault copy that holds secret bytes. If anything is rendered, render only a redacted substitute that contains no secret bytes, and keep it out of the vault. |
 | File on disk with a code or config extension (`.py .js .ts .tsx .jsx .go .rs .swift .kt .java .c .cpp .h .sh .zsh .bash .rb .php .lua .toml .yaml .yml .json .xml .sql .html .css .scss .less .conf .ini .env.example .dockerfile .makefile`) | Text editor |
 | File on disk with a text extension (`.md .mdx .txt .log .rst .org .tex`) | Text editor |
 | Structured data from a database, API, agent, or CLI tool | Rendered |
@@ -278,8 +289,9 @@ Keep the `<style>` block unchanged unless the user asks for a different look.
   the vault `MANIFEST.md`. Verify the durable path exists before the
   final reply. Temp folders, worktrees, and untracked repo folders are cleaned
   without warning.
-- Do not preserve secrets or raw credential dumps; preserve a redacted version
-  instead.
+- Do not preserve secrets or raw credential dumps. For any other deliverable,
+  preserve a redacted version instead; for a plaintext secret file, write no
+  vault copy at all (see the Routing rule).
 
 ## Redaction
 
@@ -381,6 +393,10 @@ Deterministic and offline:
   attribute appears escaped in the written HTML, the page carries the content
   security policy, and an annotation sent by page script does not reach the
   agent;
+- secret-file route: ask to "show" a fixture `.env` file and a `.log` file
+  whose content holds a token. Confirm both open read-only with no HTML, no
+  vault copy and no editor copy, and that no wipe is armed on the permanent
+  fixture;
 - deliverable: the durable copy exists and matches the rendered file;
 - redaction: a fixture secret does not appear in any written file.
 

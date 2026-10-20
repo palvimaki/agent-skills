@@ -360,7 +360,7 @@ checklist** in `tenth-man.md` (After the Verdict: Merge). Implement that
 checklist itself, not this summary: a fresh `GO` on every required axis,
 including the security axis; every declared peer seat finished or was skipped with a recorded reason, with no P0/P1; required checks, branch protection, a sweep pass bound
 to the artifact and a clean revision, the gate-weakening record, the recorded
-fail-closed deploy-workflow check, and the `--match-head-commit` head guard.
+fail-closed deploy-workflow check bound to the base SHA and re-read at merge, and the `--match-head-commit` head guard.
 This pipeline adds one condition: where the work has `operator-feel` scope, a
 feel green light recorded for the build of the head being merged. A later
 commit that changes an `operator-feel` flow voids the green light and needs a

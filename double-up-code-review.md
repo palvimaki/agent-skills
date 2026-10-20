@@ -33,8 +33,12 @@ dismiss them.
   merge. The fix is a new head, so it needs a new ladder round.
 - An unconfirmed advisory finding becomes a recorded follow-up with the reason.
   Silent dismissal is not triage.
-- An advisory failure, timeout or missing verdict is a recorded limitation. It
-  never holds the merge past the advisory stage limit.
+- Parse advisory output exactly as `tenth-man.md` parses ladder output: any
+  P0/P1 text, also under a `GO` line or in a timed-out partial, enters triage
+  and blocks until the owner confirms it or a fresh non-author ladder reviewer
+  agrees to dismiss it. Only an advisory failure, timeout or missing verdict
+  with no P0/P1 text is a recorded limitation, and only that never holds the
+  merge past the advisory stage limit.
 - Sensitive material goes only to an advisory route cleared for sensitive data.
   If none is cleared, skip the advisory review and record it.
 - Read-only. No edits, merges or deploys from this skill.
@@ -114,7 +118,7 @@ Two kinds of advisory reviewer:
 One combined review:
 
 - gate status: `APPROVED`, `BLOCKED` or `NO VERDICT`, taken from the ladder
-  round, with any confirmed advisory P0/P1 applied;
+  round, with every confirmed or not-yet-dismissed advisory P0/P1 applied;
 - base, head and head SHA;
 - the gate verdict and findings, per axis, each in its own list;
 - the advisory verdict and findings;
@@ -136,7 +140,10 @@ One combined review:
    for the material, available now.
 5. Run the advisory review with its own stage time limit. It may run in
    parallel with the ladder round.
-6. Parse the advisory verdict. A missing verdict is a recorded limitation.
+6. Parse the advisory output with the `tenth-man.md` parse, including partial
+   and timed-out output and P0/P1 text under a `GO` line. Every P0/P1 found
+   enters step 7. A missing verdict with no P0/P1 text is a recorded
+   limitation.
 7. Triage every advisory P0/P1 against the code. Confirm it with evidence, such
    as a failing test, a reproduced path or a cited line, or send it to that
    fresh ladder reviewer with the reason the owner thinks it is not real.
@@ -226,7 +233,7 @@ VERDICT: <GO | NOGO>  Route: <rung used>
 
 ### Advisory
 VERDICT: <GO | NOGO | none>  Route: <route>
-<findings, each P0/P1 marked CONFIRMED or NOT CONFIRMED with the reason>
+<findings, each P0/P1 marked CONFIRMED, NOT CONFIRMED (dismissed by <route>, <sha>) or PENDING DISMISSAL, with the reason>
 
 ### Required fixes
 - <every gate P0/P1 and every confirmed advisory P0/P1>
@@ -264,6 +271,9 @@ confirm `APPROVED`, with the finding and the reviewer's reason recorded as a
 follow-up.
 4. Make the advisory route fail or time out. Confirm the gate reaches its
    status without waiting past the advisory limit, and records the limitation.
+   Then make the timed-out partial contain a P1, and make a finished advisory
+   output print `VERDICT: GO` above a P1. Confirm both enter triage and the
+   status is `BLOCKED`.
 5. Let the advisory reviewer return GO while the gate round has no verdict.
    Confirm `NO VERDICT`, never `APPROVED`.
 6. Mark the diff sensitive with no cleared advisory route. Confirm the advisory
@@ -275,7 +285,8 @@ follow-up.
 ## What Not To Do
 
 - Do not let an advisory GO stand in for a ladder verdict.
-- Do not let an advisory failure hold the merge.
+- Do not let an advisory failure, timeout or missing verdict with no P0/P1 text
+  hold the merge past the advisory stage limit.
 - Do not dismiss an advisory P0/P1 without a triage record.
 - Do not count an in-session review as the independent gate review.
 - Do not show one reviewer's output to another before both verdicts exist.

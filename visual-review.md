@@ -82,8 +82,11 @@ theirs.
   touches; for a production patch, then the full app sweep.
 - `surfaces`: optional. Default: the primary viewport plus one narrow viewport,
   both themes and each shipped locale where the product has them.
-- `known_issues`: open tickets and prior-sweep findings. Known items are
-  re-checked, not re-reported, unless they got worse.
+- `known_issues`: open tickets and prior-sweep findings, frozen before
+  dispatch. Known items are re-checked, not re-reported, unless they got
+  worse. An item may carry an out-of-scope mark only when the spec or an
+  operator decision made before the sweep says so; no one adds that mark
+  during or after the run.
 - `account_state`: which sign-in paths work and which test accounts to use.
 - `executor_route`: the computer-use executor. Must have real capability.
 - `max_iterations`: default 3.
@@ -95,7 +98,9 @@ theirs.
   - `VERDICT: FIX P0=<n> P1=<n> P2=<n> P3=<n>`
   - `VERDICT: ABORTED — wrong build`
   - `VERDICT: NOT SWEPT — <reason>`
-- A build block: the build identity read at the start and at the end.
+- A build block: the launcher values (artifact hash, process identity, clean
+  revision) that the orchestrator read at the start and at the end, plus the
+  walker's label cross-check.
 - A re-verification table: one CURRENT or FIXED line per known item.
 - For each new finding: screenshot path, what is wrong in one sentence, and
   severity: P0 broken, P1 wrong against spec, P2 polish, P3 minor.
@@ -110,20 +115,23 @@ theirs.
 1. **Make it runnable.** Local server, development deploy or test build; never
    production. Capture the exact entry point and apply the strip rule (see
    Redaction) before storing or quoting it.
-2. **Version gate, both ends.** Bind the sweep to two values that the
-   launcher records at process start: the build artifact hash, and a clean
-   source revision (no uncommitted or local changes in the tree it was built
-   from). Require the health endpoint or in-app version label to match that
-   record and the expected commit. A `PASS` carries both values; a commit SHA
-   alone never carries release evidence. On mismatch, or on a dirty build,
-   abort with `VERDICT: ABORTED — wrong build`. Read both
-   values again at the end, before the verdict. If either value changed during
+2. **Version gate, both ends.** The orchestrator, not the executor, binds the
+   sweep to values that the launcher records at process start: the build
+   artifact hash, the server or app process identity, and a clean source
+   revision (no uncommitted or local changes in the tree it was built from).
+   These come from the launcher only, never from the page under test. The
+   health endpoint or in-app version label is only a cross-check: a mismatch
+   aborts the run, and a match proves nothing on its own. A `PASS` carries the
+   launcher hash and the clean revision; a commit SHA alone never carries
+   release evidence. On mismatch, or on a dirty build, abort with
+   `VERDICT: ABORTED — wrong build`. The orchestrator reads the launcher
+   values again at the end, before the verdict. If any of these launcher values changed during
    the sweep, the verdict is `VERDICT: ABORTED — wrong build`, and no `PASS` is
    emitted. Earlier findings are marked RE-VERIFY for the next fresh run.
 3. **Freeze the target.** While a sweep runs, hold merges and deploys to the
    swept branch. Any new commit on the swept branch invalidates the pass. Accept
-   a narrower result only from a fresh executor run that records the new head
-   and the new build identity. An addendum written by the delivery owner never
+   a narrower result only from a fresh executor run for which the orchestrator
+   records the new head and the new launcher values. An addendum written by the delivery owner never
    carries a pass forward. Never re-verdict silently.
 4. **Dispatch the executor** with the spec and acceptance criteria verbatim,
    the entry point, the build identity, the known-issue list, the artifacts
@@ -160,10 +168,11 @@ preview. Mark its scope explicitly. It never counts as release evidence.
 ```text
 Walk every user flow in scope, as a user would. Critical journeys first.
 
-Step 0: read the build identity and compare it with <expected build>. On a
-mismatch, stop and output VERDICT: ABORTED — wrong build. Before you write the
-verdict, read the build identity again. If it differs from Step 0, output
-VERDICT: ABORTED — wrong build.
+Step 0: read the in-app build label and compare it with <expected build>. This
+is only a cross-check; the orchestrator verifies the real build identity from
+the launcher. On a mismatch, stop and output VERDICT: ABORTED — wrong build.
+Before you write the verdict, read the label again. If it differs from Step 0,
+output VERDICT: ABORTED — wrong build.
 
 Drive the interface (browser automation or simulator control) and capture a
 screenshot of each meaningful state into the artifacts directory. Name each
@@ -193,8 +202,9 @@ Go beyond the happy path:
 Check both themes, a narrow viewport and each shipped locale where the product
 has them. Re-check each known item and report it as CURRENT or FIXED. Any
 in-scope known item that is CURRENT at P0 or P1 forces `VERDICT: FIX`. A
-`PASS` is allowed only when each such item is FIXED or the record marks it out
-of scope for this build.
+`PASS` is allowed only when each such item is FIXED or carries an out-of-scope
+mark from the frozen known-issue list. Any other CURRENT in-scope P0 or P1
+forces `VERDICT: FIX`.
 
 Label any test data you create "<sweep id> TEST", delete it at the end, and list
 it in a cleanup ledger. Never sign out the operator's accounts or change their
@@ -334,7 +344,8 @@ spec re-enters the loop and the new code is reviewed again.
    per-app locks.
 4. Configure the executor, triage and implementation routes in the routing
    config, and a durable artifacts directory.
-5. Give each app a build-identity source (health endpoint or version label).
+5. Give each app a launcher that records the artifact hash, process identity
+   and clean source revision at start, and a version label as a cross-check.
 6. Wire the gate after code review and before any human review. Make it
    mandatory for production patches and make the skip path explicit.
 7. Implement the version gate, the target freeze, the bound, the batched fix
