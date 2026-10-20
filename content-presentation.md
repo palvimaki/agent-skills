@@ -1,123 +1,194 @@
 # Content Presentation Skill Specification
 
-This document defines a reusable content presentation skill. It is intentionally provider-agnostic, editor-agnostic, browser-agnostic, and machine-agnostic.
+This document defines a reusable content presentation skill. It is
+provider-agnostic, harness-agnostic, editor-agnostic, browser-agnostic, and
+machine-agnostic.
 
-The skill can be implemented by any capable LLM agent that can open files with a local application and write HTML to a temporary location. No LLM API, SDK, or provider dependency is required.
+Any capable LLM agent that can open a file with a local application and write
+HTML can implement it. No LLM API, SDK, or provider dependency is required.
 
-> **Doctrine version: 2026-08-19.** Re-verify any product, path, or tool
-> convention in this repository against your own environment before you install.
+> **Doctrine version: 2026-10-20.** Rendered output now has three surfaces: a
+> plain browser page, a reviewable page that sends the user's annotations back
+> to the agent, and a harness-hosted artifact or side panel. Every render carries
+> a provenance label, and deliverables are preserved. Re-verify editor, browser,
+> and harness features in your own environment before you install.
 
 ## Contract
 
-- The editor or the browser is the delivery. Do not paste the content back into
-  the chat.
-- Source, markdown, text, log, and config files already on disk go to the editor.
-  Everything else is rendered to HTML and opened in a browser.
+- The editor or the rendered page is the delivery. Do not paste the content
+  back into the chat.
+- The routing is binary after one exception: a plaintext secret file always
+  takes the secret route in the Routing rule. Otherwise, source, markdown,
+  text, log, and config files already on disk go to the editor. Everything
+  else is rendered.
 - Never ask which surface. The routing rule decides. When it is ambiguous,
-  render.
+  render, except that a plaintext secret file is never rendered or copied: it
+  opens read-only, and the skill writes no HTML for it.
+- Inside the rendered branch, pick the richest surface that is available:
+  reviewable page when the user will react to the content, harness artifact or
+  side panel when the harness has one, plain browser page otherwise.
+- A reviewable page returns the user's annotations to the agent. The agent acts
+  on them and replies in the same loop. Escape all interpolated content, and
+  accept annotations only through a channel that a human action submits.
+- Every rendered page carries a provenance label: ISO 8601 timestamp, model,
+  and effort (`effort unknown` when unknown), plus the data source.
 - Use a fresh path per render. Never overwrite a user file.
-- A presentation the user is meant to keep also gets a durable copy. The temp
-  render is the view, not the record.
-- Redact secrets from anything opened, rendered, or written.
+- A temp render is a view, not a record. A deliverable also gets a durable copy
+  in the durable documents folder by default; it goes into a repository only on
+  the operator's request, after a secret scan and a personal-data pass.
+- Redact secrets from anything rendered, written, or published. The editor path
+  opens an existing file unchanged. For a plaintext secret file, open it
+  read-only with no editor copies under the `file-self-destruct.md` viewing
+  rule. A transient file keeps its armed wipe; never arm a wipe on a permanent
+  user file.
 
 ## Skill Identity
 
-Name: `content-presentation` (may also be published under the local alias `show-content`).
+Name: `content-presentation` (may also be installed under the alias
+`show-content`).
 
-Purpose: when the user asks to see, show, view, present, open, or look at content, route the content to the right surface automatically:
+Purpose: when the user asks to see, show, view, present, open, or look at
+content, route it to the right surface automatically:
 
-1. if the content is source code or a plain text / markdown / log / configuration file that already exists on disk, open it in a text editor;
-2. otherwise (data pulled from a database, an API, an agent, a summary, a digest, a report, a table, or anything the agent just assembled), render a polished HTML presentation and open it in a browser.
+1. source code or a plain text, markdown, log, or configuration file that
+   already exists on disk opens in a text editor;
+2. everything else (data from a database, an API or an agent, a summary, a
+   digest, a report, a plan, a comparison, a table, a diagram, or anything the
+   agent just assembled) is rendered as a polished HTML page.
 
-Use this skill for any "show me", "see", "view", "present", "open", or "display" request. The skill replaces the anti-pattern of pasting long content back into the chat transcript.
+The agent should also choose the rendered branch on its own when an answer is
+easier to grasp visually than as prose: a plan, a comparison, a diagram, a
+dense table, a multi-file diff, or a report. This replaces the anti-pattern of
+pasting long content into the chat transcript.
 
 ## Non-Negotiable Constraints
 
-- Do not depend on any specific text editor, browser, operating system, LLM, or network service.
-- Do not paste the full content back into the chat transcript when the same content is being opened in an editor or browser. The editor or browser is the delivery.
-- Do not ask the user which surface to use. The routing rule decides.
-- Do not write persistent files outside a system temp directory unless the user explicitly requested persistence.
-- Do not overwrite user files. When rendering HTML, use a fresh path per invocation (e.g. include a slug and a date).
-- Do not render content the user never asked to see. The skill surfaces existing or just-produced content; it does not invent, scrape, or summarize new material unless that is the user's request.
-- Strip or redact secrets from any content the skill opens or writes, including logs and assembled data.
+- Do not depend on one text editor, browser, harness, operating system, LLM, or
+  network service.
+- Do not paste the full content into the chat when it is opened or rendered.
+- Do not ask the user which surface to use.
+- Do not overwrite user files. Use a fresh path per render (slug plus
+  timestamp).
+- Do not render content the user did not ask to see, and do not invent new
+  material unless that is the request.
+- Do not publish a page to a third-party or shared host unless the user asked
+  for sharing. A local file or a private harness artifact is the default.
+- Strip or redact secrets from any content the skill renders, writes, or
+  publishes. Open a plaintext secret file only under the `file-self-destruct.md`
+  viewing rule.
 
 ## Timeout and Long-Running Work
 
-Rendering, conversion, browser automation, OCR, and large report assembly can
-take longer than ordinary shell checks, especially on constrained hardware or
-when local browsers need to start cold. Implementations must expose configurable
-timeouts, choose generous defaults for render and verification steps, preserve
-partial artifacts when possible, and avoid aborting a healthy long-running
-process solely because it exceeds a short generic command timeout.
+Rendering, browser start, screenshot capture, and large report assembly can be
+slow on cold or constrained hosts. Expose configurable timeouts with generous
+defaults, keep partial artifacts, and do not abort a healthy render only because
+a short generic command timeout elapsed.
 
 ## Required Behavior
 
 ### Trigger
 
-Activate when the user's request contains any of these intents, explicitly or implicitly:
+Activate when the request contains any of these intents, explicitly or
+implicitly:
 
-- "show me", "see", "view", "open", "look at", "present", "display", "render", "pull up", "let me see";
+- "show me", "see", "view", "open", "look at", "present", "display", "render",
+  "pull up", "let me see";
 - a direct instruction to open a file;
-- a follow-up like "nice html presentation of that", "in Safari", "in my editor".
-
-Default to this skill for any such request instead of inlining content in chat.
+- a follow-up such as "make a nice page of that", "in the browser", "in my
+  editor";
+- an answer the agent is about to give that is a plan, comparison, diagram,
+  table, diff, or report, and that the user asked for. Render only the
+  material of that answer, never extra material the user did not ask to see.
 
 ### Routing rule
 
-| Content                                                                                     | Surface         |
-|---------------------------------------------------------------------------------------------|-----------------|
-| File on disk with extension `.py .js .ts .tsx .jsx .go .rs .swift .kt .java .c .cpp .h .sh .zsh .bash .rb .php .lua .toml .yaml .yml .json .xml .sql .html .css .scss .less .conf .ini .env.example .dockerfile .makefile` | Text editor     |
-| File on disk with extension `.md .mdx .txt .log .rst .org .tex`                             | Text editor     |
-| Any file the user names that already exists on disk with one of the above extensions        | Text editor     |
-| Structured data pulled from a database, API, agent, CLI tool                                | HTML → browser  |
-| A summary, digest, research finding, report, recommendation, meeting recap                  | HTML → browser  |
-| Tables, lists, comparisons, timelines, dashboards                                           | HTML → browser  |
-| Anything the agent itself just assembled in this turn                                       | HTML → browser  |
-| Ambiguous or mixed                                                                          | HTML → browser  |
+Classify the path and the content before you choose a surface. A plaintext
+secret file (an environment file such as `.env`, a key, a credential dump, or
+any file whose content matches the secret patterns in `tenth-man.md`) takes the
+first row and no other.
 
-If the user's intent is to review raw source, route to editor even if the extension is missing. If the user's intent is to "see" structured information presented well, route to HTML even if it originated from a text file.
+| Content | Surface |
+|---|---|
+| Plaintext secret file | Open the path read-only under the `file-self-destruct.md` viewing rule (a transient file is its one armed path; a permanent user file opens in place with no wipe armed). Write no HTML and no vault copy. |
+| File on disk with a code or config extension (`.py .js .ts .tsx .jsx .go .rs .swift .kt .java .c .cpp .h .sh .zsh .bash .rb .php .lua .toml .yaml .yml .json .xml .sql .html .css .scss .less .conf .ini .env.example .dockerfile .makefile`) | Text editor |
+| File on disk with a text extension (`.md .mdx .txt .log .rst .org .tex`) | Text editor |
+| Structured data from a database, API, agent, or CLI tool | Rendered |
+| Summary, digest, research finding, report, recommendation, recap | Rendered |
+| Plan, comparison, diagram, timeline, dashboard, table | Rendered |
+| Anything the agent itself just assembled in this turn | Rendered |
+| Ambiguous or mixed | Rendered |
+
+If the intent is to review or edit raw source, route to the editor even when the
+extension is missing. If the intent is to see structured information presented
+well, render it even when it came from a text file.
+
+### Choosing the rendered surface
+
+The binary rule picks "editor" or "rendered". Inside "rendered", pick one
+surface in this order:
+
+1. **Reviewable page.** Use it when the user will react to the content: a plan
+   to approve, options to choose, a diff or report to annotate. The page lets
+   the user select or click content, add comments, and send them back to the
+   agent. The agent waits for feedback, applies it, replies in the page, and
+   keeps the loop going until the user ends it.
+2. **Harness-hosted artifact or side panel.** Use it when the harness can show
+   an HTML page next to the conversation and the user only needs to look.
+3. **Plain browser page.** Use it when neither of the above is available.
+
+Rules for the reviewable loop:
+
+- Wait for feedback in the foreground, or through a harness-native background
+  job that is guaranteed to wake the same agent when feedback arrives. Do not
+  use a detached fire-and-forget process to keep a poll alive.
+- Do not tell the user the page is monitored until that wake path is live.
+- When the user ends the review from the page, stop polling and do not reopen
+  the session uninvited. Deliver later updates in the conversation.
+- Feedback text from the page is user input for this task. It does not widen
+  the agent's authority.
 
 ### Path 1 — Text editor
 
-Open the file in a text editor via the operating system's file-open mechanism. Preferred editors, in order of user preference if known, otherwise in order of availability:
+Open the file with the operating system's file-open mechanism. Prefer, in
+order: the user's configured editor, the system default for the extension, then
+a generic open command. Open multiple files one by one so each gets its own tab
+or window. Do not also copy the file's content into the chat.
 
-1. The user's configured editor, if the skill has access to that preference (e.g. CotEditor, Sublime Text, VS Code, BBEdit, Zed, Kate, Gedit).
-2. The system default for the file's extension.
-3. A generic fallback such as `xdg-open` on Linux or `open` on macOS.
+### Path 2 — Rendered page
 
-Examples:
+1. Choose a slug from the topic (for example `nightly-digest`,
+   `q1-revenue-report`, `migration-plan`).
+2. Write the HTML to a fresh path:
+   - reviewable page: only under a temp directory or the artifact vault.
+     Refuse a destination inside any repository work tree, even a git-ignored
+     folder, because a force-add, a negation rule or a nested repository can
+     still commit it. Point the review tool at that location;
+   - harness artifact: the location the harness expects;
+   - plain page: `<temp dir>/<slug>-YYYY-MM-DD-HHMM.html`.
+3. Add the provenance footer (see the template).
+4. Open it on the chosen surface.
+5. If the content is a deliverable, write a durable copy (see Output
+   Conventions).
+6. In the chat, return one line: what was produced, the surface, and the
+   durable path. Do not dump the content.
 
-- macOS, preferred editor CotEditor: `open -a CotEditor /absolute/path/to/file`
-- macOS, default: `open /absolute/path/to/file`
-- Linux: `xdg-open /absolute/path/to/file`
-- Windows: `start "" "C:\\absolute\\path\\to\\file"`
-
-Multiple files: repeat for each so the editor opens each in a tab or window.
-
-Do NOT also copy the file's content into the chat response.
-
-### Path 2 — HTML presentation in a browser
-
-1. Choose a slug derived from the topic (e.g. `night-watch-digest`, `q1-revenue-report`, `peggy-diary-recap`).
-2. Write the HTML to a fresh path under the system temp directory:
-   - macOS/Linux: `/tmp/<slug>-YYYY-MM-DD.html` (append a short hash or time if the same slug is reused).
-   - Windows: `%TEMP%\\<slug>-YYYY-MM-DD.html`.
-3. Open the file in the browser:
-   - macOS, preferred browser: `open -a Safari /tmp/<slug>-YYYY-MM-DD.html` (or `open -a "Google Chrome"`, `open -a Firefox`).
-   - macOS, default: `open /tmp/<slug>-YYYY-MM-DD.html`.
-   - Linux: `xdg-open /tmp/<slug>-YYYY-MM-DD.html`.
-   - Windows: `start "" "%TEMP%\\<slug>-YYYY-MM-DD.html"`.
-4. In the chat, return a one-line summary of what was produced and the path. Do not dump the full content.
+When the page describes an existing UI or state, show it: embed real
+screenshots instead of describing the look in prose.
 
 ## HTML Template
 
-Reuse this template verbatim across presentations so they feel like one visual family. Swap the body content only; keep the `<style>` block identical.
+Reuse this template for plain pages so presentations look like one family.
+Swap the body only. A reviewable page or harness artifact may use that tool's
+own design system instead; keep the provenance footer in every case.
 
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'none'">
+<!-- Tighten or extend the policy per page. Allow only the pinned libraries
+     the template names; never inline script built from data. -->
 <title>TITLE HERE</title>
 <style>
   :root {
@@ -185,7 +256,7 @@ Reuse this template verbatim across presentations so they feel like one visual f
     </ul>
   </section>
 
-  <footer>Rendered YYYY-MM-DD</footer>
+  <footer>Generated YYYY-MM-DDTHH:MM:SS±HH:MM · MODEL · EFFORT · source: SOURCE</footer>
 </div>
 </body>
 </html>
@@ -193,83 +264,140 @@ Reuse this template verbatim across presentations so they feel like one visual f
 
 ### Variants
 
-- **Two-color category cards**: use `.card` plus `.card.alt` with `<span class="tag alt">` to alternate accent colors for mixed-domain reports.
-- **Tabular data**: use `<table>`; styles are already included.
-- **Status rows**: use `<span class="good">`, `<span class="warn">`, `<span class="bad">` inline.
-- **Long transcripts**: wrap alternating speakers in `.card` blocks with the speaker as the tag.
+- **Two-color category cards**: use `.card` plus `.card.alt` with
+  `<span class="tag alt">` for mixed-domain reports.
+- **Tabular data**: use `<table>`; styles are included.
+- **Status rows**: use `<span class="good">`, `<span class="warn">`,
+  `<span class="bad">` inline.
+- **Long transcripts**: one `.card` per speaker turn, speaker as the tag.
 - **Dashboards**: repeat `.card` blocks; use `hr.sep` between sections.
 
-Keep the `<style>` block unchanged unless the user explicitly asks for a different look. Consistency across presentations is a feature.
+Keep the `<style>` block unchanged unless the user asks for a different look.
 
 ## Output Conventions
 
-- Always write to a temp directory unless persistence is requested.
-- **A temp render is a view, not a record.** When the content is a deliverable —
-  a report, a research summary, a comparison, anything the user will want again
-  tomorrow — also write a copy to a durable location and say where it went.
-  Temp directories are cleaned by the operating system, by the host, and by the
-  next cleanup job; a deliverable that exists only there is already lost.
-- Name files `<slug>-YYYY-MM-DD.html` where `slug` is derived from the topic.
-- If the same slug was already used today, append a short hash or HH-MM so old renders are not overwritten.
-- When the content is regenerated from a live source, include a small footer line stating when it was rendered and where the data came from.
+- Name files `<slug>-YYYY-MM-DD-HHMM.html`. Never reuse a path.
+- **Provenance label.** The footer states the generation time in ISO 8601 with
+  offset, the model, the effort (`effort unknown` when unknown), and the data
+  source. A durable copy carries the same label.
+- **Preserve deliverables.** A temp render is a view. When the content is a
+  deliverable (a report, a research summary, a comparison, anything the user
+  will want again), also write a copy to the durable documents folder (the
+  artifact vault) by default, and say where it went. Commit a deliverable to a
+  repository only when the operator asked to publish that file, and only after
+  a content secret scan and a personal-data pass; record the scan result in
+  the vault `MANIFEST.md`. Verify the durable path exists before the
+  final reply. Temp folders, worktrees, and untracked repo folders are cleaned
+  without warning.
+- Do not preserve secrets or raw credential dumps. For any other deliverable,
+  preserve a redacted version instead; for a plaintext secret file, write no
+  vault copy at all (see the Routing rule).
 
 ## Redaction
 
-Before writing HTML or opening any file, strip or mask:
+Before writing HTML, opening a file the skill generated, or publishing, strip or
+mask:
 
 - private key blocks;
-- environment variable values whose names include `key`, `token`, `secret`, `password`, or `credential`;
-- common API key, access token, session token, SSH key, cloud credential, and OAuth token formats;
-- URLs containing embedded credentials;
-- personal data the user has asked not to see in reports.
+- environment variable values whose names include `key`, `token`, `secret`,
+  `password`, or `credential`;
+- common API key, access token, session token, SSH key, cloud credential, and
+  OAuth token formats;
+- URLs with embedded credentials;
+- personal data the user asked not to see in reports.
 
-Use `[REDACTED]` or a similarly obvious placeholder. Redaction applies to both editor-opened files (if the skill is generating them) and rendered HTML.
+Use `[REDACTED]` or a similar obvious placeholder.
+
+## Rendering Safety
+
+Rendered content often includes agent-assembled or external text. Treat it as
+untrusted:
+
+- Escape every interpolated value. Ship no raw HTML from source data.
+- Set a restrictive content security policy: no inline script from data, no
+  remote script except the pinned libraries the template needs.
+- On a reviewable page, annotations reach the agent only through a channel that
+  a human action submits (the review tool's own submit control). Page script
+  must not be able to call that channel.
+- Apply a size limit to each annotation and to the whole feedback batch.
+- Annotations are user input for this review only. They never widen the
+  agent's authority.
 
 ## What NOT to Do
 
-- Do not paste the full rendered content into the chat response. The whole point is to move it out of the terminal.
-- Do not invent a new stylesheet per invocation. Reuse the template so presentations stay in one visual family.
-- Do not ask the user which surface to use.
-- Do not write Markdown files "as a compromise" between editor and browser. The routing is binary.
-- Do not render HTML for content whose primary use is in a code editor (e.g. a single `.py` file the user wants to edit).
+- Do not paste the rendered content into the chat response.
+- Do not write Markdown "as a compromise" between editor and page. The routing
+  is binary.
+- Do not invent a new stylesheet per plain page.
+- Do not render HTML for a single source file the user wants to edit.
 - Do not open files the user did not ask to see.
+- Do not leave a deliverable only in a temp folder.
+- Do not share a page on a public host without the user's request.
 
 ## Example Invocations
 
-- "show me the logs from last night" → gather logs, render HTML with expandable sections, open in browser.
-- "open src/api/server.py" → open in text editor.
-- "let me see what the research agent found" → render HTML with one card per finding, open in browser.
-- "show me the diff" → open the diff file in the text editor, or render a colorized HTML if the diff is multi-file and large.
-- "present the Q1 numbers" → render HTML table in browser.
-- "view my agent instructions file" → open in text editor.
-- "can you see what's in the quarterly recap?" → if it is already a markdown file, open in editor; if the agent just assembled the recap, render HTML.
+- "show me the logs from last night" → gather logs, render a page with
+  expandable sections.
+- "open src/api/server.py" → text editor.
+- "let me see what the research agent found" → render one card per finding.
+- "here is the migration plan, tell me what to change" → reviewable page; apply
+  the returned annotations.
+- "show me the diff" → editor for a small diff; rendered or reviewable page for
+  a large multi-file diff.
+- "present the Q1 numbers" → rendered table; durable copy.
+- "can you see what's in the quarterly recap?" → editor if it is a markdown file
+  on disk; rendered page if the agent just assembled it.
+
+## Example Only
+
+The following products are examples only. The installer must re-research what
+exists on the target system and replace them.
+
+- Editors: CotEditor, Sublime Text, VS Code, BBEdit, Zed, Kate, Gedit.
+- Browsers: Safari, Chrome, Firefox.
+- Open commands: `open -a <App> <path>` on macOS, `xdg-open <path>` on Linux,
+  `start "" "<path>"` on Windows.
+- Reviewable pages: a local review CLI that serves the HTML, captures
+  click-to-quote comments, and long-polls for feedback (for example the MIT
+  licensed `lavish-axi`).
+- Harness artifacts: an artifact or canvas side panel in a chat or coding
+  harness.
 
 ## Installation Recipe (implementation-agnostic)
 
-An LLM installing this skill on a fresh system should:
-
-1. Create a skill or prompt entry that the harness surfaces when the user
-   requests content. Use the equivalent skill, prompt, tool, or agent-config
-   location for that harness.
-2. Ship the routing rule, the HTML template, and the open-command selection in that skill file so the agent can act on it without additional lookups.
-3. Detect the user's preferred editor and browser if that information is available (environment variables, known user preferences, or a simple config file) and record the choice. Fall back to the OS default when unknown.
-4. Optionally include a tiny shell wrapper that an LLM can invoke instead of composing the `open` command each time:
-   - `show-content edit <path>` → open in the preferred editor.
-   - `show-content html <path>` → open in the preferred browser.
-5. Document the skill's trigger patterns, routing rule, output conventions, and redaction requirements in the skill file so every agent behaves identically.
-6. If the system has organization-wide LLM instruction files, add a short
-   reference pointing to this skill so agents discover it without being told.
-
-## Optional Backward-Compatibility Notes
-
-- The skill was first published under the alias `show-content`. Implementations may keep that alias as an internal name. The canonical generalized name is `content-presentation`.
-- On systems where `/tmp` is cleared frequently, persist renders under the user's cache directory instead (`~/.cache/content-presentation/` or equivalent) if the user expects to re-open the artifact later.
+1. Create a skill or prompt entry that the harness surfaces when the user asks
+   to see content, and when the agent is about to answer with a plan, table,
+   comparison, diagram, or report.
+2. Ship the routing rule, the surface order, the template, and the open-command
+   selection in that entry.
+3. Detect the user's editor, browser, review tool, and harness artifact support,
+   and record the choice. Fall back to the OS default when unknown.
+4. Configure a durable documents folder for deliverables, and the provenance
+   values (how the agent learns its model and effort).
+5. Optionally ship a small wrapper: `show-content edit <path>`,
+   `show-content html <path>`, `show-content review <path>`.
+6. If the system has organization-wide agent instruction files, add a short
+   reference so agents find this skill without being told.
 
 ## Smoke Test
 
-The skill should support a deterministic smoke test:
+Deterministic and offline:
 
-- input: a known fixture file (for editor path) and a known fixture HTML payload (for browser path);
-- output: a confirmed `open` call was issued for the correct path with the correct application, and the HTML file exists, is valid, and uses the template's `<style>` block unchanged.
+- editor path: a fixture `.py` file produces an open call for that path with the
+  editor;
+- plain page: a fixture payload produces a fresh HTML file with the template's
+  `<style>` block unchanged and a footer with timestamp, model, and effort;
+- reviewable page: a synthetic annotation submitted through the human submit
+  control reaches the agent, and a reply is posted back;
+- rendering safety: a fixture value containing `<script>` and an `onerror`
+  attribute appears escaped in the written HTML, the page carries the content
+  security policy, and an annotation sent by page script does not reach the
+  agent;
+- secret-file route: ask to "show" a fixture `.env` file and a `.log` file
+  whose content holds a token. Confirm both open read-only with no HTML, no
+  vault copy and no editor copy, and that no wipe is armed on the permanent
+  fixture;
+- deliverable: the durable copy exists and matches the rendered file;
+- redaction: a fixture secret does not appear in any written file.
 
-The smoke test must not require network access. It verifies routing, template integrity, and file-path handling only.
+No network access is required.

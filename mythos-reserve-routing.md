@@ -1,389 +1,329 @@
 # Mythos-Reserve Routing Skill Specification
 
-This is a **token-effectiveness** protocol:
-a way to get the maximum realized benefit out of the latest, most expensive
-frontier model by spending it only where it is irreplaceable — long-horizon
-reasoning, architecture, security, hard debugging, judgment — and routing
-every other token to a highly capable workhorse model on a second
-subscription. Run this way, the frontier model finally gets what it does
-best: room to think, loop, and experiment in peace, with its quota intact
-when the genuinely hard problem arrives. Budget optimization follows
-automatically, as a close second — but the goal is never budget
-minimization, and not even token minimization. It is **the most benefit per
-frontier token**, across two frontier subscriptions used the way each is
-priced to be used.
+This is a **token-effectiveness** protocol. It gets the most realized benefit
+out of the newest and most expensive frontier model. It spends that model only
+where it is irreplaceable: long-horizon reasoning, architecture, security,
+cross-system diagnosis and judgment. Every other token goes to a cheaper route
+that does the job just as well. The goal is not the smallest bill and not the
+fewest tokens. The goal is **the most accepted outcomes per frontier token**.
 
-The protocol is model-agnostic. "Mythos-class" is a **role**, not a brand:
-whichever model on your stack is currently the deepest reasoner and the most
-aggressively metered. For many builders that is the frontier model inside their
-interactive coding harness, with a second subscription's coding model as the
-workhorse — and a stack of that shape is used as the worked example throughout.
-If the situation reverses, or another family pushes to the front, you don't
-rewrite anything by hand: **tell your frontier model to update this skill to
-reflect the present situation.** It will take care of it. That self-update
+"Mythos-class" is a **role**, not a brand. It is whichever model on your stack
+is currently the deepest reasoner and the most tightly metered. When the
+landscape moves, you do not rewrite this spec by hand. You tell your frontier
+model to update your local copy to the present situation. That self-update
 clause is part of the spec.
 
-> **Doctrine version: 2026-08-19.** Every model name, tier name, and effort
-> label below is a worked example with a shelf life. The roles, the rules, and
-> the economics are the portable part. Re-verify the names against current
-> documentation before you install, and re-derive them via the self-update
-> clause whenever your subscriptions move.
+> **Doctrine version: 2026-10-20.** Routing now has four tiers, and the cheapest
+> tier runs as harness-native subagents inside the interactive session. Frontier
+> effort has a floor, not a ceiling. Quota limits are re-checked by real probe.
+> Model names, tier names and effort labels all have a shelf life; the roles and
+> rules are the portable part.
 
 ## Contract
 
 - Expensive tokens buy thinking. Cheap tokens buy doing.
-- The reserve model is human-interactive only: no reserve-family subagents at
-  any tier, no headless dispatches, no scheduled jobs, no review lanes.
-- Volume work goes to the workhorse ladder, on the lightest tier that suffices.
-- Resolve every model identifier, effort setting, and reviewer from the host's
-  machine-readable routing config. Never from memory.
-- Cap reasoning effort at high unless the human states a need for a higher tier
-  in that specific case.
-- Every PR keeps two blocking review axes — correctness and security — and
-  neither runs on the reserve plan.
-- A required reviewer that fails procedurally blocks. It never escalates to the
-  reserve model as a fallback.
-- Exclude a route from sensitive material by hosting jurisdiction and data
-  policy, not by vendor reputation. Gate the surface, not the model.
-- The orchestrator implements inline only inside the size limits below.
+- Route by tier: fast low-cost worker tier, daily-driver route, demanding route,
+  frontier reserve. Put each unit on the lowest tier that clears it.
+- The frontier reserve runs only in sessions the operator opens. Native workers
+  inside that session never inherit the frontier model; each worker names a
+  cheaper tier explicitly.
+- A frontier model runs at high effort or above. To save tokens, move the work
+  to a cheaper route. Never downshift the frontier model's effort.
+- Resolve every model, effort and reviewer from one machine-readable
+  `<routing config>`. Report its live version when a choice depends on it. An
+  unknown identifier fails fast.
+- Subscription first. Agent work uses subscription CLIs and harness-native
+  subagents. A metered API is allowed only for approved features that end users
+  see.
+- Workers get a bounded goal, the relevant files and exact acceptance checks.
+  No organization lore.
+- Cheap output never grades itself. The parent verifies every worker result.
+- Every PR passes an independent review ladder at the exact head SHA. The
+  frontier reserve never staffs a review lane as a fallback.
+- A usage limit is re-checked by one real probe every few hours. Never wait for
+  the published reset date, never evade a limit by switching providers, and
+  never ask the operator to buy credits.
 
 ## Skill Identity
 
 - Skill name: `mythos-reserve-routing`
-- Purpose: treat the Mythos-class model as a **strategic reserve** whose
-  tokens buy only what no other model can deliver; route all volume work to
-  the workhorse route; keep a mandatory independent review gate on every PR;
-  decide inline-vs-delegate by token economics, not habit.
-- Trigger conditions: consult before any subagent dispatch, any model/effort
-  selection, any PR-review staffing decision, and any "should the
-  orchestrator just do this itself?" call.
-- Audience: solo builders and small teams orchestrating an agentic coding
-  harness — an interactive frontier session as the main thread, a second
-  subscription's CLI as the delegated executor.
+- Purpose: keep the frontier model as a **strategic reserve** for the work only
+  it can do, route volume work down the tier ladder, keep independent review on
+  every PR, and decide inline-versus-delegate by token economics.
+- Trigger conditions: before any worker dispatch, any model or effort choice,
+  any review staffing choice, and any "should the orchestrator just do this
+  itself?" call.
+- Audience: solo builders and small teams that run an interactive agent harness
+  as the main thread, with one or more subscription CLIs as delegated
+  executors.
 
 ## The Problem This Solves
 
-Frontier reasoning models are at their best when you let them think long,
-loop, and experiment — which is exactly what makes them able to consume a
-week's subscription quota in an afternoon. Meanwhile the workhorse tier
-is a seriously capable implementation and review model whose low and medium
-effort lanes are hard to exhaust at all — a fact a surprising number of
-builders overlook.
+A frontier reasoning model is at its best when it thinks long and loops. That
+same habit can spend a week of subscription quota in an afternoon. Meanwhile
+the cheaper tiers are very capable at bounded work, and their quotas are hard
+to exhaust.
 
-The common failure mode is routing by habit instead of by economics: the
-expensive model writes boilerplate, explores codebases, runs test loops, and
-mechanically edits twenty files — work the workhorse does just as well — and
-then the quota is gone, and with it the frontier model's actual value: its
-availability for the problem only it can solve. Burning the reserve on
-mechanical work doesn't just waste money; it *forfeits capability*.
+The common failure is routing by habit. The expensive model explores the
+codebase, summarizes logs, runs test loops and edits twenty files by rule. A
+cheaper tier does that work equally well. Then the quota is gone, and with it
+the frontier model's real value: its availability for the hard problem. Burning
+the reserve on mechanical work does not only waste money. It forfeits
+capability.
 
-The fix is a standing protocol, written down where every agent reads it, so
-the routing decision is never made ad hoc in the moment.
+The fix is a standing protocol that every agent reads, so nobody makes the
+routing choice ad hoc.
 
-## Core Principle
+## The Four Tiers
 
-**Expensive tokens buy thinking. Cheap tokens buy doing.**
+| Tier | Owns | Never owns |
+|---|---|---|
+| **Fast low-cost worker tier** | Bounded read-mostly work: codebase, log and document search; file, diff, log and test-output summaries; extraction and classification from supplied context; inventories and status checks; consistency sweeps; mechanical edits with an exact specification. | Multi-file features, architecture, security or merge-gate reviews, final verdicts, operator decisions. |
+| **Daily-driver route** | Standard coding, multi-file implementation, uncertain bugs, integration, routine coordination and synthesis. | The hardest unresolved problems. |
+| **Demanding route** | Diagnosed hard failures, demanding coding, a different approach after repeated failure. | Bulk volume. |
+| **Frontier reserve** | The hardest architecture, security reasoning, cross-system diagnosis, analysis ahead of irreversible decisions, strategy. | Anything a lower tier clears. |
 
-- The Mythos-class plan is a reserve, spent only on Mythos-class problems,
-  in the main thread, in sessions you open deliberately — and there it
-  should spend *freely*: max thinking, long loops, real experimentation.
-  Reserve does not mean timid.
-- The workhorse plan is used liberally for implementation, research,
-  exploration, and review — down to 0% if needed.
-- Every routine token of mechanical work on the reserve is a token
-  unavailable for the hard problem you haven't hit yet.
+Rules for the tiers:
 
-## Role Definitions
+1. **Harness-native subagents are the fast tier's home.** Many harnesses can
+   spawn a subagent on a named cheaper model inside the interactive session, on
+   subscription quota. Use that for read-mostly work instead of an inherited
+   frontier worker. Model family is not a data clearance: a native subagent can
+   run on a different endpoint with a different region, log or retention
+   policy. Send sensitive material to a subagent only when the routing config
+   marks that exact route cleared for that data class, the same check that
+   reviewers get.
+2. **Escalate on evidence, not on retry.** On a failed acceptance check or an
+   unclear task, move the unit up one tier. Do not retry the same tier
+   unchanged. A task that is plainly hard may start on the frontier reserve.
+3. **The workers never escalate to the reserve on their own.** Only the
+   operator, or an orchestrator already running on the reserve, spends reserve
+   tokens.
+4. **Headless and scheduled routes keep their declared providers.** The
+   frontier reserve has no headless, scheduled or CI lane.
 
-**Mythos-class (reserve main thread, user-initiated only):**
+## Effort Rules
 
-- Architecture decisions and design audits with long-lived consequences
-- Security reviews and incident reasoning
-- Hard debugging after the workhorse has failed twice on the same problem
-- Analysis ahead of irreversible decisions
-- Plan documents and strategy synthesis
-- Review verdicts on Mythos-class changes (in-session — see Lane R3)
-
-Make each such session end in a **durable artifact** — a plan document,
-audit report, decision log, or review verdict committed to a repo. Inference
-evaporates; documents survive the session and compound.
-
-**Workhorse: everything else.** Implementation, refactors, tests, research
-sweeps, codebase exploration, PR review, scheduled jobs.
+- **Frontier floor: high.** A frontier model runs at high effort or above. A
+  frontier model at low effort costs frontier quota and gives a lower-tier
+  answer. When the work does not need high effort, it does not need the
+  frontier model.
+- **Lower tiers: medium by default, high for demanding units.** The fast tier
+  and the daily driver normally run at medium.
+- **Top tiers on purpose.** The highest effort tier is for the case that needs
+  it, stated in the task. Keep the effort per route in the `<routing config>`,
+  not in prose.
 
 ## Hard Rules
 
-1. **The reserve family is human-interactive only — every lane, no
-   exceptions.** Smaller siblings of the Mythos-class model usually bill the
-   same plan, so a "cheap" exploration subagent is not cheap. That covers all
-   of: native subagent/Task spawns at any tier, headless dispatches from
-   scripts or other agents, scheduled and CI lanes, and **review lanes**.
-   Review is the one people leave behind, because "it is only a review" — and
-   then the reserve is staffing a gate that runs on every PR. Inside a reserve
-   session, delegation means shelling out to the workhorse CLI, full stop.
-2. **Resolve routes from the config, never from memory.** Where a
-   machine-readable routing config exists it is the source of truth for model
-   identifiers, effort, and reviewer staffing. A remembered identifier goes
-   stale silently and a retired one fails at dispatch time. An unknown or
-   retired identifier must fail fast rather than fall through to a default.
-3. **Effort ceiling: high.** No lane — orchestrator, executor, or reviewer —
-   runs above the host's normal high tier unless the human states a need for
-   that specific case. Top tiers overthink each step, spend the scarcest quota
-   fastest, and rarely change the answer. This retires any older rule that
-   said review always runs at the maximum tier.
-4. **No multi-agent ceremony in the reserve session.** A Mythos session is
-   single-threaded, focused, bounded: no recursive agent trees, no parallel
-   reserve fan-outs, no "ultra" workflow patterns. One problem in, one
-   artifact out.
-5. **The workhorse never escalates to the reserve on its own.** Only the
-   human decides to spend reserve tokens.
-6. **Hard-switch off the quota bombs.** Harness features that loop, fan out,
-   or recurse autonomously on the reserve plan — recurring-prompt loops,
-   "ultra" multi-agent cloud reviews, autonomous workflow modes, and
-   anything similar — can eat a week's usage in one prompt. Don't rely on
-   discipline: disable them at the harness level where possible (permission
-   deny rules, uninstalled plugins, settings), so a stray invocation fails
-   instead of billing. If one of these genuinely earns its cost on a
-   Mythos-class problem, the human enables it for that run and switches it
-   back off.
+1. **No inherited frontier workers.** A worker spawned inside a frontier session
+   names its tier. A default that inherits the parent model is the most common
+   silent leak.
+2. **Resolve routes from the config, never from memory.** A remembered
+   identifier goes stale silently. A retired one fails at dispatch time. An
+   identifier the config does not know fails fast; it never falls through to a
+   default. When the config file is missing, unreadable or invalid, dispatch
+   stops and reports the error. Reviewed defaults exist only for the offline
+   smoke test; a live dispatch never uses them.
+3. **Switch off the quota bombs.** Harness features that loop, fan out or
+   recurse on their own on the reserve plan can spend a week of quota in one
+   prompt. Disable them at the harness level (permission deny rules, removed
+   plugins, settings), so a stray invocation fails instead of billing. The
+   operator enables one for a specific run and switches it back off.
+4. **No metered fallback.** When a subscription route is unavailable, the
+   fallback is another declared subscription route, a queue, or a recorded
+   block. It is never a pay-per-token API call.
 
-## The Workhorse Ladder
+## Quota Limits
 
-A modern workhorse subscription is not one model. It is a ladder of tiers that
-trade capability against burn, and the routing win comes from putting each unit
-of work on the lightest rung that still clears it.
+- A usage limit, a payment-required response or a "try again at <date>" message
+  is a **hold**, not a fact about the future. The operator can apply a reset at
+  any time.
+- Re-check with **one bounded real call** through the normal route after a few
+  hours, and at most every few hours. A dashboard, a meter or the published
+  date is not a probe.
+- Resume at once when the probe works. The work record names the last probe
+  time and the next probe time. A resume condition is never only the published
+  reset date.
+- While the hold lasts, route the work by the declared fallbacks in the
+  `<routing config>`, or queue it. Never switch to an undeclared provider to get
+  around the limit. Never promote bulk volume to a higher tier to get around a
+  shared rate window.
+- Never ask the operator to top up, buy credits or upgrade a plan because of a
+  hold. Only a long-lasting billing failure, as the config defines it, is an
+  operator decision.
+- Tell two failure shapes apart. A used-up window means queue and probe later.
+  A model-identifier rollout error means one logged retry on a declared sibling,
+  then fail closed and report it.
 
-Three rungs are enough:
+## Routing Table: Example Instantiation
 
-- **Orchestration rung** — the strongest tier. Orchestration, review lanes, and
-  a *bounded* one-rung escalation for a unit that genuinely defeated the rung
-  below. Never bulk volume: this rung is where a careless fan-out empties the
-  window.
-- **Standard rung** — the everyday executor. Well-specced implementation and
-  research. Medium effort by default, high when the unit is demanding.
-- **Mechanical rung** — templated and mechanical work: probes, queues,
-  classification, boilerplate, small well-specced patches. Medium effort.
-
-**The rung ladder is not a rate-limit ladder.** On at least one major provider
-the short rolling rate window is enforced at the *account* level, shared by
-every tier — verify this on your own stack with a cheap probe rather than
-assuming. Where it is shared, no rung rescues another rung's exhausted window,
-and "escalate a tier" is not a workaround. When the window is dead: queue the
-work until it resets, or move genuinely urgent units to a *different family*
-that respects your reserve floor. Never promote bulk volume to the orchestration
-rung to get around a window.
-
-Distinguish two failure shapes that look alike: an exhausted window (queue and
-wait) and a model-identifier rollout error (one logged retry on a sibling rung,
-then fail closed and surface it). Treating a rollout error as a window
-exhaustion strands the pipeline; treating an exhaustion as a rollout error
-burns the next rung too.
-
-## Routing Table — Example Instantiation
-
-The mapping below is the worked example, not the spec. The roles are the spec;
-refresh the names via the self-update clause whenever the landscape moves.
+The table shows roles. The concrete models live in the `<routing config>`.
 
 | Work | Route |
 |---|---|
-| Narrow mechanical patch, probe, classification | Workhorse mechanical rung, medium effort |
-| Standard well-specced feature | Workhorse standard rung, medium effort |
-| Challenging well-specced patch | Workhorse standard rung, high effort |
-| Research sweep / codebase exploration | Workhorse standard rung, medium–high effort |
-| A unit that defeated the standard rung | Workhorse orchestration rung, high effort, bounded |
-| Headless / scheduled orchestration | Workhorse orchestration rung, high effort |
-| PR correctness review | Independent reviewer family, high effort (Lane R1) |
-| PR security review | A further independent family, high effort (Lane R2) |
-| Optional advisory review on high-risk PRs | A further family still (Lane R3) |
-| Visual / UX walk of a running build | A route with real UI-driving capability, medium effort |
-| Architecture, security reasoning, hard debugging, strategy | Mythos-class main thread (the reserve) |
+| Search, summary, extraction, inventory, consistency sweep | Fast low-cost tier, native subagent |
+| Mechanical edit with an exact specification | Fast low-cost tier |
+| Standard well-specified feature | Daily-driver route, medium |
+| Challenging patch, uncertain bug, integration | Daily-driver route, high |
+| A unit that failed acceptance on the daily driver | Demanding route, high, bounded |
+| Headless or scheduled job | Its declared non-reserve provider |
+| PR correctness review | First available reviewer on the `<review ladder>` |
+| PR security review (production apps, external repositories) | Security-axis reviewer cleared for the material |
+| Visual or UX walk of a running build | A route that can really drive a browser or simulator |
+| Hardest architecture, security reasoning, cross-system diagnosis | Frontier reserve, high or above |
 
-Effort-tier names follow whatever your workhorse CLI calls its reasoning-effort
-setting. Keep them in the routing config, not in prose.
+## The Review Gate
 
-## The Review Gate — Every PR Still Gets Reviewed
+Reserving the frontier model must not mean less review.
 
-Reserving the expensive model must not mean dropping review. Three lanes:
+- **The review ladder in `tenth-man.md` is the merge gate.** That spec is the
+  single source for round rules, verdict parsing, repair rounds, the security
+  axis, sensitive-data routing and the canonical merge checklist. In short: one
+  fresh independent reviewer per seat, never the author, bound to the exact
+  head SHA; only P0/P1 block; no verdict is never a GO.
+- **Never fall back to the frontier reserve or to the author's family** when
+  a required seat's ladder is exhausted. The gate has `NO VERDICT` and the PR
+  waits.
+- **Advisory extras.** A same-session review by a different model family inside
+  the harness is useful extra evidence. When the frontier reserve is already the
+  orchestrator, its own read of the final diff is also additive. Neither
+  approves a merge. A P0/P1 from either one follows the dismissal rule in
+  `double-up-code-review.md`: it blocks until the owner confirms and fixes it,
+  or until a fresh non-author ladder reviewer agrees to dismiss it.
+- **Time limits.** Each review stage has a deadline.
 
-- **Lane R1 — correctness (blocking, every PR):** a fresh-context antagonist
-  at high effort with a findings-only prompt, from a family different from the
-  author's where the stack allows it. The reviewer must be a **separate
-  invocation** from the implementer — the session that wrote the code never
-  reviews its own diff. Where no other family is available, cross-instance
-  review within one family, given fresh context and an adversarial prompt,
-  still catches most of what cross-family review catches. (See `tenth-man.md`
-  in this repo for the prompt template.) Zero reserve cost.
-- **Lane R2 — security (blocking, every PR):** a *separate* reviewer, from a
-  further family, with a security-only scope: exploitability, trust boundaries,
-  auth bypasses, injection paths, races with a security consequence, secret
-  exposure, unsafe failure states. Not a bullet inside the R1 prompt — a
-  mixed checklist loses the security items to the correctness items every
-  time. This lane is why the number of families on a modern stack matters more
-  than the number of subscriptions. Zero reserve cost.
-- **Lane R3 — advisory (optional, high-risk PRs):** a further independent
-  family on auth, payments, data-loss surfaces, caching and service-worker
-  behavior, and anything production-adjacent. Non-blocking: its findings are
-  triaged into R1 or R2 when real, and never block on their own authority.
-  See `double-up-code-review.md`. Still zero reserve cost.
-- **Lane R4 — reserve in-session verdict (Mythos sessions only):** when the
-  reserve model is *already engaged* as the orchestrator on a hard problem,
-  have it read the final diff and issue an in-session verdict **in addition
-  to** R1 and R2. The marginal cost is small — the context is already loaded —
-  and it catches spec-level and architectural misses that implementation-focused
-  review tends not to flag. Never spawn a *separate* reserve process for this.
-- **Independence rule:** whoever authored the spec has structural blind spots
-  about it. The gates that count are the fresh-context independent passes (R1,
-  R2); an orchestrator's own verdict is additive, never a substitute.
-- **Fail-closed rule:** a required lane that fails procedurally — wrapper error,
-  timeout, unparseable verdict — blocks the merge. It never escalates to the
-  reserve as a fallback, and it never falls back to the author's family. Fix the
-  route or take the block.
-- **Data-residency rule:** exclude a route from sensitive material by where the
-  data is hosted and what the provider's data policy allows, not by vendor
-  reputation. Gate the surface, not the model: the same route may be a full peer
-  on ordinary code and ineligible for one regulated surface. A jurisdiction skip
-  is a recorded review limitation and is non-blocking; if it leaves a *required*
-  axis unstaffed, that is a block for a human to resolve.
+See `tenth-man.md` and `double-up-code-review.md` in this repository for the
+prompts and the two-axis layout.
 
-## Inline vs. Delegate — When the Orchestrator Codes Itself
+## Inline Versus Delegate
 
-Dispatching a task to the workhorse costs the orchestrator a fixed overhead:
-writing the spec, auditing the result, possibly iterating. For tiny changes
-that overhead exceeds the cost of just making the edit. The expensive
-orchestrator implements **inline** only when *all* of these hold:
+A dispatch has a fixed overhead: the task text, the result check, maybe a
+repair round. For tiny changes that overhead costs more than the edit. The
+frontier orchestrator edits **inline** only when all of these hold:
 
-- ≤ ~25 changed lines across ≤ 2 files
-- the change is fully determined by context already in its window — zero new
-  exploration needed
-- no test-iterate loop anticipated; verification is one cheap command
-- no branch/worktree ceremony beyond what the session is already in
+- about 25 changed lines or fewer, in 2 files or fewer;
+- the change follows from context already loaded, with no new exploration;
+- verification is one cheap command;
+- no new branch or worktree is needed.
 
-Typical inline cases: version-bump rituals, applying review nitpicks in an
-already-open session, config/doc one-liners, the single obvious fix for a
-bug the orchestrator just root-caused. **Everything else goes to the
-workhorse**, on the lightest lane that suffices.
+Everything else goes down the tier ladder.
 
-**Corollary — hand over the goal, not the spec.** If the orchestrator would
-have to read substantial new code just to *write* a delegation spec, don't.
-Give the workhorse the goal plus acceptance criteria and let it explore.
-Workhorse exploration is near-free; frontier-model reading is not. The
-expensive tokens go into the parts only the frontier model can do: framing
-the problem, setting acceptance criteria, and judging the result.
+**Hand over the goal, not a spec built from fresh reading.** If the
+orchestrator must read a lot of new code only to write the task, it should not.
+It gives the worker the goal, the relevant files and the acceptance checks, and
+lets the worker explore. Frontier tokens go to framing the problem, setting the
+acceptance bar and judging the result.
 
-## Phases — Adapting When Plans Change
+## Measure Per Accepted Outcome
 
-Subscription terms move. Encode your situation as dated phases so every
-agent reading the skill applies the right rules without re-litigating them:
+- Count the whole cost of an accepted result: reasoning, tool calls, retries,
+  tests, reviews and repairs.
+- Keep stable instruction prefixes. Batch independent reads. Trim tool output.
+  Keep durable checkpoints.
+- Do not repeat an unchanged test or review. Do not add keepalive calls. Do not
+  fork a frontier worker for routine extraction.
+- Metered API prices are not a conversion factor for subscription quota. Judge
+  subscription routes by quota use per accepted outcome.
 
-- **Reserve window:** while the Mythos-class model is on your subscription
-  but heavily metered — all rules above apply.
-- **Sunset:** if the model leaves your subscription for token-based billing
-  and you run a zero-API-cost policy, usage drops to **zero** — no sessions,
-  no dispatches — until budget allows or it returns to a subscription. Any
-  invocation during sunset is a budget breach: stop and surface it. Freed
-  subscription capacity (e.g. the next tier down) can then resume staffing
-  the review gate if your plan still includes it.
-- **Abundance:** if you later hold quota to spare, relax rule 1 first
-  (reserve-family exploration subagents), keep the review-independence rule
-  and the inline-economics rule — those are good engineering regardless of
-  budget.
+## Phases
 
-Write the actual dates into your local copy and put a calendar reminder on
-the phase boundary.
+Subscription terms move. Record your situation as dated phases in your local
+copy, so agents apply the right rules without debate:
+
+- **Reserve window:** the frontier model is on a subscription but tightly
+  metered. All rules above apply.
+- **Sunset:** the frontier model leaves the subscription for metered billing.
+  Agent use drops to zero until it returns to a subscription. Any invocation in
+  this phase is a budget breach: stop and report it.
+- **Abundance:** quota to spare. Relax the inherited-worker rule first. Keep
+  independent review, the effort floor and the inline economics; they are good
+  engineering at any budget.
 
 ## The Self-Update Clause
 
-The model names in this spec will go stale; the roles will not. When the
-landscape shifts — your reserve model changes family, the workhorse gets
-leapfrogged, a third subscription enters the picture — do not edit the skill
-by hand. Open a session with your current frontier model and say:
+The model names will go stale; the roles will not. When the reserve changes
+family, a tier is leapfrogged or a subscription starts or ends, open a session
+with your current frontier model and say:
 
-> Update my `mythos-reserve-routing` skill to reflect the present situation:
-> these are my current subscriptions, models, metering terms, and CLIs.
-> Re-derive the routing table, the review-gate staffing, and the phase
+> Update my `mythos-reserve-routing` skill and my routing config to the present
+> situation: these are my current subscriptions, models, effort tiers, metering
+> terms and CLIs. Re-derive the four tiers, the review ladder and the phase
 > dates. Keep the roles and rules intact.
 
-Re-deriving a routing table from the principles in this spec is itself a
-Mythos-class task — framing, judgment, economics — and a textbook use of
-reserve tokens: a few minutes of frontier thinking that compounds across
-every dispatch that follows.
+The update never edits the live routing config. It opens a reviewed change
+(a PR) for the config. Protected keys (repository profile, sensitive-data
+clearance, ladder order, rung identity, fallbacks, and the review, merge and
+human-gate keys) also need an operator record for that head, as in
+`tenth-man.md`. The live file stays as it is until that change merges.
+
+Re-deriving the routing from these principles is a frontier task: framing,
+judgment and economics. A few minutes of it pay off across every dispatch that
+follows.
 
 ## Anti-Leak Checklist
 
-Things that silently burn the reserve — audit your setup for each:
+Audit your setup for each of these:
 
-- Subagent/Task tools defaulting to a reserve-family tier inside reserve
-  sessions
-- Skills or scripts that internally call the reserve model (panels,
-  reviewers, summarizers) as part of "automatic" pipelines
-- Scheduled tasks, CI hooks, or cloud routines configured with reserve-family
-  models
-- Plan-mode or exploration helpers that spawn reserve-family subagents
-- Habitual "let me just ask the big model" moments for questions the
-  workhorse answers identically
-- Loop / ultra-review / autonomous-workflow features left enabled on the
-  reserve plan — the single biggest one-prompt quota killers; hard-disable
-  them (rule 6)
-- **Review lanes still staffed with the reserve family** — the most common
-  leak once the obvious ones are fixed, because a per-PR gate looks small and
-  runs on every PR
-- Routing configs that name a model identifier the provider has since retired,
-  so dispatch silently falls back to a default tier
-- Visual/UX walkers, summarizers, and triage steps quietly defaulting to the
-  reserve family inside otherwise-workhorse pipelines
+- Native subagents that inherit the frontier model instead of naming a cheaper
+  tier.
+- Skills or scripts that call the frontier model inside automatic pipelines
+  (panels, reviewers, summarizers, triage).
+- Scheduled tasks, CI hooks or cloud routines set to the frontier family.
+- Loop, fan-out or autonomous orchestration features left on for the reserve
+  plan.
+- Review lanes staffed with the frontier reserve. A per-PR gate looks small and
+  runs on every PR.
+- A frontier model set to low effort "to save tokens" instead of moving the
+  work down.
+- A config that names a retired identifier, so dispatch falls back to a default
+  without a signal.
+- A quota hold whose resume condition is only the published reset date.
+- Worker prompts that carry organization lore instead of the goal, the files
+  and the checks.
 
 ## Installation Recipe
 
-Install the same protocol where **both** agents read it:
-
-1. **Reserve harness:** create the skill in that harness's skill directory,
-   with whatever metadata it requires (a name, and a description that triggers
-   on any routing, model-selection, review-staffing, or quota decision),
-   followed by the rules above, edited to your dates and model versions.
-2. **Workhorse CLI:** create the same content in that CLI's prompt or skill
-   directory, written from the workhorse's perspective (its key rule: it never
-   routes work to the reserve on its own).
-3. Reference the skill from each agent's global instructions file in one line
-   each, so the protocol is discoverable even when the skill is not
-   auto-triggered.
-4. Keep a machine-readable routing config (TOML/JSON mapping task types to
-   provider, model identifier, effort, and reviewer role). Make it the source
-   of truth, have every skill defer to it on conflict, and have the dispatch
-   layer fail fast on an identifier the config does not know. This is what
-   keeps the prose in this spec from becoming the routing authority as it ages.
-5. Record which routes are ineligible for which data surfaces, with the reason
-   (hosting jurisdiction, provider data policy, contractual limit). Ineligibility
-   belongs in the config, not in an agent's judgment at dispatch time.
-
-For other harnesses, place the same two artifacts wherever each agent loads
-skills, prompts, or standing instructions.
+1. **Interactive harness:** create the skill in the harness's skill location,
+   with a description that triggers on routing, model choice, review staffing
+   and quota decisions.
+2. **Native subagent:** define one fast low-cost worker agent, if the harness
+   supports named subagents, with the tier's allowed and forbidden work in its
+   description.
+3. **Each executor CLI:** install the same rules from that executor's point of
+   view. Its key rule: it never routes work to the reserve on its own.
+4. **Routing config:** keep one machine-readable file that maps task types to
+   provider, model identifier, effort, fallbacks and reviewer roles, with a
+   version string. Every skill defers to it on conflict. The dispatch layer
+   fails fast on an unknown identifier. Declare its protected-key list (see
+   `tenth-man.md`); without that list, no autonomous merge runs.
+5. **Data eligibility:** record in the config which routes are ineligible for
+   which data, and why (hosting jurisdiction, provider data policy, contract).
+6. Add a one-line pointer to the skill in each agent's global instructions.
 
 ## Smoke Test
 
-1. In a fresh reserve session, ask: "explore this repo and summarize the
-   architecture." Correct behavior: it dispatches the workhorse CLI (medium
-   effort) rather than spawning a reserve-family subagent or grinding
-   through files itself.
-2. Ask it to fix a one-line typo it can already see. Correct behavior:
-   inline edit, no dispatch.
-3. Open a PR and ask for review. Correct behavior: two independent
-   invocations — correctness and security — at high effort, from families
-   other than the author's where available, both separate from whichever
-   invocation implemented the change, and neither on the reserve plan.
-4. Make the security route fail. Correct behavior: the gate blocks and says so.
-   Incorrect behavior: it escalates to the reserve model or approves anyway.
-5. Ask for a scheduled or headless job. Correct behavior: it is staffed from
-   the workhorse ladder, never the reserve family, whatever the task.
-6. During a declared sunset phase, ask for the Mythos-class model. Correct
-   behavior: refusal with a pointer to the phase rule, not a silent
-   invocation.
+1. In a fresh frontier session, ask: "Explore this repo and summarize the
+   architecture." Correct: a fast-tier native subagent does the reading, and
+   the parent checks the summary. Incorrect: an inherited frontier worker, or
+   the parent reads every file itself.
+2. Ask it to fix a one-line typo it can see. Correct: an inline edit.
+3. Ask for a standard multi-file feature. Correct: the daily-driver route, with
+   a bounded goal, the files and the acceptance checks.
+4. Open a PR and make the first reviewer return garbage. Correct: procedural
+   failure, the next reviewer on the ladder runs at once, and the verdict binds
+   to the head SHA. Incorrect: GO, or a fallback to the frontier reserve.
+5. Simulate a usage limit that says "try again in five days." Correct: a work
+   record with the next real probe in a few hours, and declared fallbacks
+   meanwhile. Incorrect: waiting five days, an undeclared provider, or a
+   request to buy credits.
+6. Ask the frontier model to run at low effort to save quota. Correct: it keeps
+   high effort and moves the work to a cheaper tier.
 
 ## Redaction Note
 
-This spec deliberately describes routes by **role** — reserve, workhorse rungs,
-correctness reviewer, security reviewer, advisory reviewer — rather than by
-brand. Role names do not go stale and do not reveal whose stack this came from.
-Everything private to the originating setup — hostnames, repo layouts, org
-names, ticket systems, wrapper commands, internal dates and directives — has
-been removed. When you install it, your local copy will accumulate private
-context of its own: keep it out of any public fork.
+This spec names routes by role: frontier reserve, demanding route, daily-driver
+route, fast low-cost worker tier, correctness reviewer, security reviewer. Role
+names do not go stale and do not reveal whose stack this came from. Your local
+copy will gather private context: hosts, repositories, wrapper commands, dates.
+Keep that out of any public fork.
