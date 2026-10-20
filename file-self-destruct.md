@@ -144,17 +144,23 @@ Prefer the host's **native scheduler**. Do **not** reach for legacy `cron` by
 reflex:
 
 - **macOS** — a per-user launchd LaunchAgent with a `StartCalendarInterval`
-  (Hour + Minute), loaded via `launchctl bootstrap gui/<uid> <plist>`. Avoid
+  (Month + Day + Hour + Minute; Hour + Minute alone repeats daily and fires
+  early for a TTL over 24 hours), plus a fire-after time that the wipe helper
+  checks before it acts, loaded via `launchctl bootstrap gui/<uid> <plist>`. Avoid
   `cron`: on recent macOS the legacy cron daemon is gated behind a
   privacy / Full-Disk-Access consent prompt, so installing a user crontab can
   surface a permission dialog and, if it is dismissed, the job may **silently
   never fire** — which defeats the entire guarantee this skill exists to provide.
 - **Linux with systemd** — a transient user timer:
-  `systemd-run --user --on-active=10m rm -f <path>` (self-cleaning), or `at` if
-  `atd` is enabled.
+  `systemd-run --user --on-active=10m <wipe helper> <job id>`, where the helper
+  applies Path Safety and the teardown order, or `at` with the same helper if
+  `atd` is enabled. Never schedule a bare `rm -f <path>`. If the helper's wipe
+  fails, the helper arms a new timer before it exits.
 - **Portable fallback** — a detached background process (`setsid` / `nohup` that
-  sleeps then deletes). Works anywhere, but does **not** survive a reboot, so use
-  it only for short windows and state that limitation.
+  sleeps, then runs the same wipe helper). It does not survive a reboot, and a
+  reboot leaves the secret on disk with nothing armed. Use it only when no
+  native scheduler exists. Also register a login or boot item that runs the
+  same wipe helper for the recorded path.
 
 Whatever the user calls it — "cron job", "timed task", "scheduled task" — choose
 the platform-native, promptless, unattended one-shot mechanism, and **verify the
@@ -178,25 +184,37 @@ second, deregister last.
 ## Workflow
 
 1. Receive the secret on stdin, plus the destination path and TTL.
-2. Write the file under a restrictive umask; set owner-only permissions (`0600`).
+2. Before any write, apply the Path Safety checks to the destination. Refuse a
+   path inside the managed store, a path on the canary allowlist, a path with a
+   leaf symbolic link, and a path that already exists. Create the file with
+   exclusive no-follow creation (for example `O_CREAT|O_EXCL|O_NOFOLLOW`, mode
+   `0600`, umask `077`). Record its device and inode from the open descriptor.
 3. Compute the fire time = now + TTL.
 4. Generate a uniquely-named one-shot job that deletes exactly that path at the
    fire time and then self-cleans per the teardown ordering above.
 5. Register the job with the platform-native scheduler.
-6. Verify the job is registered and the file permissions are correct.
+6. Verify the job is registered and the file permissions are correct. If
+   registration or verification fails, shred the file at once through the
+   descriptor from step 2, confirm the path is gone, and report the failure.
+   Never report success, and never leave the file on disk, without an armed
+   and verified job.
 7. Report path, mode, wipe time (local time with offset), and job id. Never
    the secret value.
 
-To show the file to the user, open it in a text editor (see
-`content-presentation.md`). Do not print it in the chat.
+To show the file to the user, open it read-only in a viewer that writes no
+swap, backup, autosave or session-restore copy. Configure the editor that way,
+or use a plain read-only viewer. Any copy outside the one armed path defeats
+the wipe. Do not print it in the chat.
 
 Two early actions exist. Bind each one to an explicit user request:
 
 - **Cancel the wipe** (keep the file): deregister the job and delete its
   scheduling artifacts by explicit path. Leave the target file in place, and
   state the residual risk.
-- **Destroy now**: deregister the job, delete its scheduling artifacts, and
-  shred the one canonical target path at once.
+- **Destroy now**: shred the one canonical target at once, by the Path Safety
+  rules below, and verify the wipe. Only after that check succeeds,
+  deregister the job and delete its scheduling artifacts. On any failure,
+  leave the job armed and report the failure.
 
 "Cancel" alone means cancel the wipe. It never deletes the file.
 
@@ -216,6 +234,7 @@ Every check works on the resolved path, not on the string the caller gives:
   inode, and a link count of 1. If any check fails, refuse and report.
 - Overwrite through that open descriptor only. Then unlink the directory entry
   only while it still names the same inode.
+- If the target path is absent at wipe time, report it, then remove the job.
 - If the overwrite or unlink does not finish, keep the job armed (or re-arm
   it) and report the failure. The job removes itself only after a verified
   wipe.
@@ -266,8 +285,12 @@ Deterministic and offline:
 - **Assert:** the file is gone, the scheduling artifacts are gone, and the job is
   deregistered.
 
-Also assert that the helper refuses a path inside the managed store and a path
-on a fixture canary allowlist.
+Also assert that the helper refuses, before it writes any byte, a path inside
+the managed store, a path on a fixture canary allowlist, and an existing file.
+Each fixture stays byte-identical.
+
+Registration-failure fixture: a stub scheduler that rejects the job. Assert
+that the file is gone and the failure is reported.
 
 Path-attack fixtures. Each case must refuse the wipe, leave the foreign target
 byte-identical, and keep the job armed and reported:

@@ -27,6 +27,8 @@ copy-and-manifest script makes it reliable, but the rules work without one.
 - If the designated location is missing, stop and report it. Never fall back
   silently to another disk.
 - Never preserve secrets, credential dumps, key material or symbolic links.
+  Check content, not only names: scan every file before the copy, and fail the
+  preserve when the scan cannot run.
 - If preservation fails, do not claim the files are ready.
 
 ## Skill Identity
@@ -64,7 +66,7 @@ Choose the most suitable durable location:
 | Source, docs or config that belong in the product | Commit in version control, on a branch that outlives the worktree |
 | Small final deliverables for the operator | `<artifact vault>` in a durable documents folder |
 | Bulky evidence: builds, logs, screenshots, recordings | `<work volume>/<evidence area>` |
-| Sensitive material | The approved `<secret store>`, never the vault |
+| Sensitive material | Not this skill. Refuse it and report the path by name. Hand a secret the user wants kept to the secret-intake workflow, and confirm or arm a self-destruct on a transient one (`file-self-destruct.md`). Never leave a refused plaintext secret with nothing armed. |
 
 When in doubt, preserve a copy in the artifact vault and report the vault
 manifest path.
@@ -104,10 +106,17 @@ evidence, not decoration.
 
 1. List every file the final reply will cite.
 2. Classify each one with the Durable Targets table.
-3. Refuse any path that matches a secret pattern: a secret directory, an SSH
+3. Apply this check to each cited path and, for a directory, to every member,
+   found by a walk that does not follow links. Refuse the whole directory when
+   any member is refused, or copy a filtered tree and list each excluded member
+   by name in the manifest. Refuse any path that matches a secret pattern: a secret directory, an SSH
    directory, environment files, key, certificate, keystore or
-   credentials-looking names, and every symbolic link. Preserve a sanitized
-   version instead when one is useful.
+   credentials-looking names, and every symbolic link. Then scan the file
+   content before the copy, with the secret patterns of `tenth-man.md`
+   (private key blocks, token and API key formats, credential URLs, secret
+   environment values). Refuse the raw file when the scan hits. Preserve a
+   redacted copy only when the redacted bytes are what the reply cites. If the
+   scan cannot run, fail the preserve and report it.
 4. Check that the target location exists. If the work volume or the vault is
    missing, stop and report it. Do not create a mount point. Do not write to the
    system disk instead.
@@ -181,8 +190,12 @@ harness to clean.
    path with a manifest, not the temp path.
 2. Confirm the manifest has a hash, a timestamp and `generated_by` with an
    effort value or `effort unknown`.
-3. Include an environment file in the input list. Confirm it is refused.
-4. Include a symbolic link. Confirm it is refused.
+3. Include an environment file in the input list. Confirm it is refused. Then
+   include a log with an ordinary name that contains a private key block and a
+   token. Confirm the raw file is refused, and that disabling the scanner
+   fails the preserve.
+4. Include a symbolic link, and a directory that contains an environment file
+   and a symbolic link. Confirm that each is refused or excluded and listed.
 5. Unmount or rename the work volume and request a screenshot set. Confirm the
    agent stops and reports it, and writes nothing to the system disk.
 6. Delete the original temp directory. Confirm the vault copy still opens.

@@ -31,8 +31,11 @@ HTML can implement it. No LLM API, SDK, or provider dependency is required.
   and effort (`effort unknown` when unknown), plus the data source.
 - Use a fresh path per render. Never overwrite a user file.
 - A temp render is a view, not a record. A deliverable also gets a durable copy
-  in version control or a durable documents folder.
-- Redact secrets from anything opened, rendered, written, or published.
+  in the durable documents folder by default; it goes into a repository only on
+  the operator's request, after a secret scan and a personal-data pass.
+- Redact secrets from anything rendered, written, or published. The editor path
+  opens an existing file unchanged. For a plaintext secret file, follow
+  `file-self-destruct.md`: read-only, no editor copies, wipe armed.
 
 ## Skill Identity
 
@@ -65,8 +68,9 @@ pasting long content into the chat transcript.
   material unless that is the request.
 - Do not publish a page to a third-party or shared host unless the user asked
   for sharing. A local file or a private harness artifact is the default.
-- Strip or redact secrets from any content the skill opens, writes, or
-  publishes.
+- Strip or redact secrets from any content the skill renders, writes, or
+  publishes. Open a plaintext secret file only under the `file-self-destruct.md`
+  viewing rule.
 
 ## Timeout and Long-Running Work
 
@@ -144,8 +148,10 @@ or window. Do not also copy the file's content into the chat.
 1. Choose a slug from the topic (for example `nightly-digest`,
    `q1-revenue-report`, `migration-plan`).
 2. Write the HTML to a fresh path:
-   - reviewable page: the location the review tool expects (often a hidden
-     folder in the working directory);
+   - reviewable page: the location the review tool expects. If that location
+     is inside a repository working directory, confirm before the write that
+     the folder is git-ignored, or point the tool at a temp directory.
+     Rendered data must never enter a commit;
    - harness artifact: the location the harness expects;
    - plain page: `<temp dir>/<slug>-YYYY-MM-DD-HHMM.html`.
 3. Add the provenance footer (see the template).
@@ -265,8 +271,11 @@ Keep the `<style>` block unchanged unless the user asks for a different look.
   source. A durable copy carries the same label.
 - **Preserve deliverables.** A temp render is a view. When the content is a
   deliverable (a report, a research summary, a comparison, anything the user
-  will want again), also write a copy to version control or a durable documents
-  folder, and say where it went. Verify the durable path exists before the
+  will want again), also write a copy to the durable documents folder (the
+  artifact vault) by default, and say where it went. Commit a deliverable to a
+  repository only when the operator asked to publish that file, and only after
+  a content secret scan and a personal-data pass; record the scan result in
+  the vault `MANIFEST.md`. Verify the durable path exists before the
   final reply. Temp folders, worktrees, and untracked repo folders are cleaned
   without warning.
 - Do not preserve secrets or raw credential dumps; preserve a redacted version
@@ -366,8 +375,12 @@ Deterministic and offline:
   editor;
 - plain page: a fixture payload produces a fresh HTML file with the template's
   `<style>` block unchanged and a footer with timestamp, model, and effort;
-- reviewable page: a synthetic annotation reaches the agent and a reply is
-  posted back;
+- reviewable page: a synthetic annotation submitted through the human submit
+  control reaches the agent, and a reply is posted back;
+- rendering safety: a fixture value containing `<script>` and an `onerror`
+  attribute appears escaped in the written HTML, the page carries the content
+  security policy, and an annotation sent by page script does not reach the
+  agent;
 - deliverable: the durable copy exists and matches the rendered file;
 - redaction: a fixture secret does not appear in any written file.
 

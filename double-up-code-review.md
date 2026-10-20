@@ -22,8 +22,12 @@ authority.
   not use, preferably from a further model family.
 - The advisory reviewer reads the same frozen, redacted evidence and the same
   head SHA. It never reads the gate reviewer's output first.
-- Advisory findings never approve and never block by themselves. The delivery
-  owner triages each advisory P0/P1 against the code.
+- Advisory findings never approve by themselves. The delivery owner triages
+  each advisory P0/P1 against the code. The owner can confirm a finding alone.
+  The owner cannot dismiss one alone: a "not confirmed" disposition counts
+  only after a fresh ladder reviewer that is not the author gets the finding
+  and the frozen evidence and agrees. Until then, or if that review gives no
+  verdict, the status is `BLOCKED`.
 - A confirmed advisory P0/P1 is an actual defect. The owner fixes it before the
   merge. The fix is a new head, so it needs a new ladder round.
 - An unconfirmed advisory finding becomes a recorded follow-up with the reason.
@@ -132,8 +136,8 @@ One combined review:
    parallel with the ladder round.
 6. Parse the advisory verdict. A missing verdict is a recorded limitation.
 7. Triage every advisory P0/P1 against the code. Confirm it with evidence, such
-   as a failing test, a reproduced path or a cited line, or record why it is
-   not real.
+   as a failing test, a reproduced path or a cited line, or send it to that
+   fresh ladder reviewer with the reason the owner thinks it is not real.
 8. Set the gate status:
    - `BLOCKED` when the ladder returned NOGO on any axis, or when triage
      confirmed an advisory P0/P1;
@@ -143,8 +147,11 @@ One combined review:
      the status is `BLOCKED`) or not confirmed and recorded with a reason. An
      unconfirmed advisory finding never leaves the status undefined.
 9. Write or post the combined review. Record P2/P3 follow-ups with an owner.
-10. After a fix, start again at step 1 with the new head. Run Double-Up again
-    only if the risk reason still applies.
+10. After a fix, start again at step 1 with the new head. Add every confirmed
+    advisory P0/P1 to the prior blocking findings of the next ladder round, so
+    each seat confirms it fixed or still open. Run the advisory reviewer again
+    on the new head when it found a confirmed P0/P1. The status stays
+    `BLOCKED` until the finding is confirmed fixed.
 
 Merge stays with the orchestrator under the canonical merge checklist in
 `tenth-man.md` (After the Verdict: Merge). This skill adds no merge condition
@@ -246,8 +253,10 @@ Use a temporary repository with no private data.
 2. Plant a P1 that only the advisory reviewer reports, and confirm it with a
    failing test. Confirm `BLOCKED`, and confirm the fix needs a new ladder
    round.
-3. Let the advisory reviewer report a P1 that triage cannot confirm. Confirm
-   `APPROVED`, with the finding recorded as a follow-up and a reason.
+3. Let the advisory reviewer report a P1 that the owner cannot confirm.
+Confirm `BLOCKED` until a fresh non-author ladder reviewer rejects it. Then
+confirm `APPROVED`, with the finding and the reviewer's reason recorded as a
+follow-up.
 4. Make the advisory route fail or time out. Confirm the gate reaches its
    status without waiting past the advisory limit, and records the limitation.
 5. Let the advisory reviewer return GO while the gate round has no verdict.

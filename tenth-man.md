@@ -81,8 +81,9 @@ rung names a route, its effort and its stage time limit. Typical profiles:
   verdict stands alone only after the secondary ladder is exhausted, and only
   when no seat reported a P0/P1, including P0/P1 text in a timed-out partial.
   An actual P0/P1 from either reviewer blocks. A separate security-axis review always runs.
-- **Other repositories.** Use the default ladder with the same blocking rule
-  until the operator assigns a profile.
+- **Other repositories.** A repository with no assigned profile uses the
+  production profile, including the separate security axis, until the operator
+  assigns a profile. Never fall back to a single combined review.
 
 Round rules:
 
@@ -154,8 +155,8 @@ vendor reputation.
 - A repair is a new head. Every required seat, including the security seat,
   reviews the full frozen diff of that head. The earlier blocking findings are
   a mandatory checklist inside that full review: each one is confirmed fixed
-  or still open. A new P0/P1 anywhere in the diff blocks. Only new P2/P3
-  findings on code the repair did not change become follow-ups.
+  or still open. A new P0/P1 anywhere in the diff blocks. Every new P2/P3
+  finding, on changed or unchanged code, becomes a follow-up with an owner.
 - The repair is a new head, so it gets a new round from the top of the ladder.
 - The default repair allowance comes from the task. More repair cycles need a
   routine process exception (below).
@@ -165,7 +166,10 @@ vendor reputation.
 - Each rung has a positive stage time limit in the `<routing config>`. A rung
   without a valid limit is a route-resolution failure: no process starts, and
   the next rung runs.
-- A round budget bounds the whole ladder.
+- A round budget bounds the whole ladder. When the budget ends, every seat
+  still running or not yet tried is a procedural failure. A required seat with
+  no verdict gives NO VERDICT. Budget exhaustion never counts as an exhausted
+  secondary ladder.
 - Set limits from measurement. Slow reasoning on a normal diff is not a
   failure. A limit shorter than the reviewer's normal reasoning time turns the
   ladder into a stream of procedural failures.
@@ -186,18 +190,29 @@ The review is evidence. The orchestrator that owns the PR merges it
 autonomously only when all of these hold for the current head SHA:
 
 - a fresh `GO` from an independent reviewer on every required axis;
-- every peer seat that started for this head has finished, none is still
-  running, and no seat reported an actual P0/P1, including P0/P1 text in a
-  timed-out partial; a complete subset of seats never starts the merge;
+- every peer seat that the profile declares for this head either finished, or
+  was skipped with a recorded reason (availability record or sensitive-data
+  clearance) after its whole ladder was tried; none is still running; and no
+  seat reported an actual P0/P1, including P0/P1 text in a timed-out partial.
+  A seat that was not started and has no recorded skip blocks the merge;
 - passing required checks;
 - no branch-protection rejection;
-- for production and user-facing work, a UX sweep `PASS` bound to both the
-  swept artifact hash and a clean source revision equal to the head being
-  merged (see `visual-review.md`); a commit SHA alone is not enough, and
-  missing, stale, failed or incomplete sweep evidence blocks the merge;
-- if the diff touches a gate spec or the review, merge or human-gate keys of the
-  `<routing config>`, an operator decision record that names this head SHA; a
-  missing record blocks the merge.
+- for every production patch, including backend-only work, and for every
+  user-facing change: a UX sweep `VERDICT: PASS` bound to both the swept
+  artifact hash and a clean source revision equal to the head being merged
+  (see `visual-review.md`); a commit SHA alone is not enough, and missing,
+  stale, failed or incomplete sweep evidence blocks the merge. The only skip is
+  non-production work with no user-facing surface, recorded in the merge
+  record;
+- if the diff touches a path in the declared `<gate paths>` list or the
+  review, merge or human-gate keys of the `<routing config>`, an operator
+  decision record that names this head SHA. The record counts only when the
+  operator made it through a channel that agents cannot write, or when it was
+  committed outside this PR by the operator's own identity. A record that is
+  added by this PR, written by an agent, or quoted from a work record does not
+  count. A missing or unverified record blocks the merge. A missing `<gate
+  paths>` list blocks every merge that touches the `<routing config>` or any
+  skill file;
 
 Rules:
 
@@ -287,6 +302,8 @@ Limits:
 - `author_route`: the model, agent or session that produced the target. Used to
   keep the reviewer independent.
 - `sensitivity`: `normal` or `sensitive`. Default: classify from the material.
+  If the classification is missing, uncertain or contested, use `sensitive`.
+  Record who classified the material and why.
 - `context`: constraints, tests, citations and prior blocking findings for a
   repair round.
 - `output_target`: stdout, a file, a PR comment or another review surface.
@@ -334,10 +351,13 @@ For a plan, research brief, runbook, incident report or exception proposal,
 freeze the exact text, referenced excerpts, explicit constraints, stated
 assumptions, claimed verification and the decision being gated.
 
-Give the reviewer the complete diff in one pass when it fits the payload limit.
-Do not split a review into chunks by file group: chunks lose cross-file context
-and create their own edge cases. Mark anything left out. Do not invent missing
-facts.
+Give the reviewer the complete diff in one pass. A diff above the payload
+limit is blocked, as in "Stage Time Limits and Capacity". Do not split a
+review into chunks by file group: chunks lose cross-file context and create
+their own edge cases. Leave out only paths that match an exclusion list
+declared in the `<routing config>`, such as lockfiles that a required check
+verifies. The gate record lists every excluded path. An undeclared exclusion
+makes the round a procedural failure, never a GO. Do not invent missing facts.
 
 ## Redaction
 
@@ -373,7 +393,7 @@ Rules:
 - If GO, state that there are no P0/P1 findings under the stated scope.
 - In a repair round, review the full diff. First confirm each prior blocking
   finding is fixed or still open. Report every P0/P1 you see as blocking. Mark
-  new P2/P3 findings on unchanged code as follow-ups.
+  every new P2/P3 finding as a follow-up.
 - For each finding, give evidence, impact and required remediation.
 - Separate confirmed evidence from inference.
 - Do not praise. Do not summarize before findings. Do not edit files.
@@ -441,9 +461,11 @@ VERDICT: GO | NOGO
 1. Create a skill, command or agent named `tenth-man` in the harness's normal
    skill location. Store this document as its instructions, or convert the
    sections from "Skill Identity" to "Output Format".
-2. Add the `<review ladder>` for each repository profile to the
-   `<routing config>`: ordered rungs, effort, stage limit, sensitive-data
-   clearance and a separate security ladder where the profile needs one.
+2. Add the `<review ladder>` for each repository profile to the `<routing
+config>`: ordered rungs, effort, stage limit, sensitive-data clearance and a
+separate security ladder where the profile needs one. Declare the `<gate
+paths>` list: every gate spec and every file that implements a review, merge
+or human gate.
 3. Keep an availability record per route, so the gate skips an unavailable
    rung at once.
 4. Implement evidence freeze, redaction, head-SHA binding, verdict parsing,
@@ -482,6 +504,13 @@ Use a temporary repository or a synthetic plan with no private data.
     changed approach. Confirm a bounded GO with an expiry in the record.
 12. Confirm no output contains absolute local paths, user names, host names,
     credentials or personal identifiers.
+13. Make the deploy-workflow check uncertain (an unknown workflow). Confirm the
+    merge stops and becomes an operator decision.
+14. Change a gate path with no decision record, then with a record that the PR
+    itself adds. Confirm both block.
+15. On a production profile, do not start the secondary seat and record no
+    skip. Confirm the merge blocks.
+16. Leave sensitivity unclassified. Confirm only cleared rungs run.
 
 ## What Not To Do
 

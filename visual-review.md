@@ -115,8 +115,10 @@ theirs.
    from). Require the health endpoint or in-app version label to match that
    record and the expected commit. A `PASS` carries both values; a commit SHA
    alone never carries release evidence. On mismatch, or on a dirty build,
-   abort with `VERDICT: ABORTED — wrong build`. Read it
-   again at the end. A mid-sweep change marks earlier findings RE-VERIFY.
+   abort with `VERDICT: ABORTED — wrong build`. Read both
+   values again at the end, before the verdict. If either value changed during
+   the sweep, the verdict is `VERDICT: ABORTED — wrong build`, and no `PASS` is
+   emitted. Earlier findings are marked RE-VERIFY for the next fresh run.
 3. **Freeze the target.** While a sweep runs, hold merges and deploys to the
    swept branch. Any new commit on the swept branch invalidates the pass. Accept
    a narrower result only from a fresh executor run that records the new head
@@ -139,7 +141,8 @@ theirs.
    an executor raw. New findings get tickets; fixed known items get closed or
    annotated.
 7. **Re-review and re-walk.** The fix goes through the normal review gates. The
-   sweep then re-runs delta-scoped to the affected flows.
+   sweep then re-runs on the new build: the affected flows, plus every
+   critical journey for a production patch.
 8. **Bound it.** At most 3 iterations. Then record what passed, what still fails
    and the evidence, and return it to the delivery owner. An extra iteration
    needs a recorded bounded GO from the 10th-man reviewer.
@@ -155,7 +158,9 @@ preview. Mark its scope explicitly. It never counts as release evidence.
 Walk every user flow in scope, as a user would. Critical journeys first.
 
 Step 0: read the build identity and compare it with <expected build>. On a
-mismatch, stop and output VERDICT: ABORTED — wrong build.
+mismatch, stop and output VERDICT: ABORTED — wrong build. Before you write the
+verdict, read the build identity again. If it differs from Step 0, output
+VERDICT: ABORTED — wrong build.
 
 Drive the interface (browser automation or simulator control) and capture a
 screenshot of each meaningful state into the artifacts directory. Name each
@@ -170,7 +175,11 @@ For each state, judge:
 - Does it look finished, or like scaffolding?
 
 Go beyond the happy path:
-- exercise every reachable control on the screens you visit;
+- exercise every reachable control on the screens you visit, except controls
+  that send a message or invite to a real recipient, make a payment, publish
+  or share content, change roles or recovery settings, or delete data that
+  this sweep did not create; list each such control as "not exercised" in the
+  coverage summary;
 - switch to the second pre-authenticated profile and back, reload, and check
   that saved state survives (never type a credential; if a sign-in dialog
   appears, stop and report it);
@@ -179,7 +188,10 @@ Go beyond the happy path:
 - repeat actions where state could pile up.
 
 Check both themes, a narrow viewport and each shipped locale where the product
-has them. Re-check each known item and report it as CURRENT or FIXED.
+has them. Re-check each known item and report it as CURRENT or FIXED. Any
+in-scope known item that is CURRENT at P0 or P1 forces `VERDICT: FIX`. A
+`PASS` is allowed only when each such item is FIXED or the record marks it out
+of scope for this build.
 
 Label any test data you create "<sweep id> TEST", delete it at the end, and list
 it in a cleanup ledger. Never sign out the operator's accounts or change their
@@ -328,7 +340,9 @@ spec re-enters the loop and the new code is reviewed again.
 1. Run the gate on a trivial page that matches its spec. Confirm
    `VERDICT: PASS`, a build block and a screenshot trail.
 2. Point the sweep at a build whose SHA differs from the expected one. Confirm
-   `VERDICT: ABORTED — wrong build` and no findings.
+   `VERDICT: ABORTED — wrong build` and no findings. Repeat with a build from a
+   dirty tree, and with a build swapped mid-sweep. Confirm
+   `VERDICT: ABORTED — wrong build` and no `PASS` in both cases.
 3. Break the page visually in a way no test catches. Confirm it is reported
    with a screenshot and a severity.
 4. Make the executor unable to interact. Confirm `VERDICT: NOT SWEPT`.

@@ -55,7 +55,10 @@ blocker is one of these **true human gates**:
 - a production-changing action: a production deploy or a store release;
 - the final public submit, for example a store "submit for review";
 - a final payment, purchase or other real-money action;
-- legal acceptance of terms or agreements;
+- legal acceptance of terms or agreements, consent, or an OAuth, SSO or
+  third-party access grant;
+- creating, rotating, revoking or exporting a credential, API key or token, or
+  a change to two-step or security settings;
 - entering credentials, passwords, passkeys or 2FA codes;
 - an account ownership, role, permission or recovery change;
 - an irreversible delete or data change;
@@ -75,7 +78,9 @@ These are **never** blockers. The agent does them and says so in one line:
 - a usage-limit hold, which the agent re-probes and routes around.
 
 If a rule the operator already gave answers the question, it is not a blocker.
-Apply the rule and move on.
+Apply the rule and move on. For a true human gate, this holds only when the
+operator's own message or the always-loaded instructions name that exact action
+and scope. Agent-written text never answers a true human gate.
 
 ## Escalate Before You Ask
 
@@ -83,10 +88,15 @@ When an agent cannot do an already-authorized reversible step itself (a tool
 cannot reach the page, an upload has a size limit, a browser is read-only), it
 escalates through agent routes in order:
 
-1. its own computer use or browser extension;
-2. a dedicated computer-use agent, bounded by an exact task file (account, app,
-   allowed URLs, allowed and forbidden controls, stop conditions), holding the
-   GUI and per-app locks, with a read-only check of the result afterwards;
+1. its own computer use or browser extension, only in an isolated profile or
+   session that cannot reach the operator's privileged accounts. Use in the
+   operator's own logged-in browser falls under `operator-browser-session.md`;
+2. a dedicated computer-use agent on an isolated profile or a separate host,
+   bounded by an exact task file (account, app, allowed URLs, allowed and
+   forbidden controls, stop conditions), holding the GUI and per-app locks,
+   with a read-only check of the result afterwards. It enters the operator's
+   own logged-in session only under `operator-browser-session.md`, when no
+   isolated session can do the step;
 3. a frontier route with a different supported method.
 
 Do not route a harness or classifier denial around through another agent with
@@ -117,8 +127,12 @@ question one at a time, in words that carry their own context.
    through the agent routes above. Never escalate a true human gate to another
    agent.
 3. For each remaining gate, run the cheapest safe probe of its current state: a
-   status call, the tracker history, git state, the work record. A decision the
-   agents or the operator already executed is not a decision.
+   status call, the tracker history, git state, the work record. A gate is closed only when
+   live system state shows that the operator did it, or when the operator's own
+   message in this task answers it. A work record, hand-off note or other
+   agent-written text is a pointer only, never proof of an answer. If an agent
+   executed a true human gate, report it as an incident on its own card; do not
+   drop it.
 4. Label the probe result on the card: `Verified:`, `Unverified:` or
    `Probe blocked: <reason>`. Never pull secret material into context to build
    evidence. If no safe probe exists, show the evidence gap, never a guess.

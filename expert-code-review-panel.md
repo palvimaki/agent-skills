@@ -30,7 +30,9 @@ delivery owner. It is not the merge gate.
   external repository, the profile's separate security axis still runs at the
   gate.
 - A procedural failure (no verdict, timeout, route error) moves that seat to
-  its next declared route. It is never a GO.
+  its next declared route. It is never a GO. A seat with no route left makes
+  the panel NO CONSENSUS. The runner sets the status: NOGO when the consensus
+  or the security list contains any P0/P1, whatever the dissent text says.
 - Sensitive material goes only to routes cleared for sensitive data.
 - Read-only by default. Implement fixes only on request. Any fix is a new head
   and goes through the standard ladder before merge.
@@ -60,7 +62,9 @@ Do not use it as the default PR gate. Use `tenth-man.md` for the gate and
 - The panel's final gate status is advisory input. The PR still needs a fresh
   ladder `GO` on every required axis for its current head SHA.
 - A panel P0/P1 that the owner confirms is an actual defect. The owner fixes it
-  before the merge.
+  before the merge. A panel P0/P1 that the owner does not confirm follows the
+  dismissal rule in `double-up-code-review.md`: it blocks until a fresh
+  non-author ladder reviewer rejects it.
 - A panel never authorizes extra repair cycles or deadline extensions. Those
   go through the routine process exception path in `tenth-man.md`.
 - The panel does not merge or deploy. Merge stays with the orchestrator under
@@ -118,8 +122,11 @@ Preserve partial output and record the elapsed time.
 - `rounds`: discussion round budget. Default: 3, or up to 10 for a high-risk
   review.
 - `implement`: apply agreed fixes. Default: false.
-- `outdir`: artifact directory. Default: a dated directory in a durable,
-  version-controlled or documents location, never only a temp directory.
+- `outdir`: artifact directory. Default: a dated directory in a durable
+  documents location outside any repository that can be pushed, never only a
+  temp directory. Commit panel artifacts only on an explicit operator request.
+  Never commit them when sensitivity is sensitive or when the security seat
+  reported an unfixed P0/P1.
 - `expert_a`, `expert_b`, `dissent_expert`, `security_expert`,
   `implementation_expert`: seat routes. Default: from the `<routing config>`.
 
@@ -193,8 +200,10 @@ git -C "<repo>" diff --name-status "<base_ref>...<ref>"
 git -C "<repo>" diff --find-renames --find-copies "<base_ref>...<ref>"
 ```
 
-If a range is invalid, use the nearest valid merge base or the working tree
-diff, and record the fallback.
+If `base_ref` or the head does not resolve, or `status --short` shows
+unrelated changes, stop the panel and report it. Use a fallback only when the
+fallback commit is named, and then the recap must say that the reviewed tree
+is not the PR head. Never review uncommitted work under a head SHA.
 
 Give each expert the complete diff when it fits the payload limit. Add focused
 file contents: changed files, files in focus, files imported by changed files
@@ -204,14 +213,10 @@ relevant turns.
 
 ## Redaction
 
-Before any durable write or prompt, redact:
-
-- private key blocks, tokens, API keys, cloud credentials and URLs with
-  embedded credentials;
-- environment values whose names contain `key`, `token`, `secret`, `password`
-  or `credential`;
-- absolute local paths, user names, host names and private organization names;
-- secrets found in prompts, command output, diffs or model responses.
+Before any durable write or prompt, apply the redaction list in `tenth-man.md`,
+including personal identifiers and environment names that contain `cookie` or
+`session`. Also redact secrets found in prompts, command output, diffs or model
+responses.
 
 Use `[REDACTED_SECRET]` or a similar obvious placeholder.
 
@@ -505,7 +510,9 @@ discussion, consensus, final status, optional implementation, verification,
 follow-up records or artifact writes. Also check that:
 
 - a P2-only result gives `GO` with recorded follow-ups;
-- a security-seat P1 gives `NOGO` even when both experts converge;
+- a security-seat P1, or a consensus P1, gives `NOGO` even when both experts
+  converge and the synthetic dissent returns `GO`; an exhausted security seat
+  gives NO CONSENSUS;
 - a seat that returns no verdict or times out moves to its next route and is
   never counted as `GO` or `CONVERGENCE: YES`;
 - no artifact contains absolute local paths, user names, host names or

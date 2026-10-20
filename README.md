@@ -37,8 +37,8 @@ nothing left for the operator to interpret.
 
 ## Review and merge
 
-- **[tenth-man.md](tenth-man.md)** — The standard merge gate. One fresh, independent reviewer per round from an ordered review ladder; the verdict binds to the exact head SHA; only P0/P1 block; production code also gets a separate security axis. Covers guarded autonomous merge, and also judges routine process exceptions such as an extra repair cycle.
-- **[double-up-code-review.md](double-up-code-review.md)** — Adds one advisory reviewer from a further model family on top of the ladder for high-risk PRs. Owner triage, not the advisory verdict, decides what must be fixed.
+- **[tenth-man.md](tenth-man.md)** — The standard merge gate. One fresh, independent reviewer per seat from an ordered review ladder (a production profile runs its peer seats as a set); the verdict binds to the exact head SHA; only P0/P1 block; production code also gets a separate security axis. Covers guarded autonomous merge, and also judges routine process exceptions such as an extra repair cycle.
+- **[double-up-code-review.md](double-up-code-review.md)** — Adds one advisory reviewer from a further model family on top of the ladder for high-risk PRs. A confirmed advisory P0/P1 blocks; the owner cannot dismiss one alone, so a fresh non-author reviewer must agree before it becomes a follow-up.
 - **[expert-code-review-panel.md](expert-code-review-panel.md)** — An optional two-expert review with a dissent seat and a separate security seat that argue to consensus. Deeper evidence beside the review ladder, not a replacement for it.
 
 ## Delivery
