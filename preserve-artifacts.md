@@ -66,7 +66,7 @@ Choose the most suitable durable location:
 | Source, docs or config that belong in the product | Commit in version control, on a branch that outlives the worktree |
 | Small final deliverables for the operator | `<artifact vault>` in a durable documents folder |
 | Bulky evidence: builds, logs, screenshots, recordings | `<work volume>/<evidence area>` |
-| Sensitive material | Not this skill. Refuse it and report the path by name. Hand a secret the user wants kept to the secret-intake workflow, and confirm or arm a self-destruct on a transient one (`file-self-destruct.md`). Never leave a refused plaintext secret with nothing armed. |
+| Sensitive material | Not this skill. Refuse it and report the path by name. A transient scratch secret gets a verified intake or a verified self-destruct (`file-self-destruct.md`) before return. A permanent user file stays in place, the package fails, and the path is reported; no wipe is armed on it. |
 
 When in doubt, preserve a copy in the artifact vault and report the vault
 manifest path.
@@ -107,9 +107,16 @@ evidence, not decoration.
 1. List every file the final reply will cite.
 2. Classify each one with the Durable Targets table.
 3. Apply this check to each cited path and, for a directory, to every member,
-   found by a walk that does not follow links. Refuse the whole directory when
-   any member is refused, or copy a filtered tree and list each excluded member
-   by name in the manifest. Refuse any path that matches a secret pattern: a secret directory, an SSH
+   found by a walk that does not follow links. A filtered copy that lists each
+   excluded member by name in the manifest is allowed only for non-secret
+   refusals (for example a symbolic link). On a secret or credential hit, do
+   not report success while the raw file remains: for a transient scratch
+   file, finish a verified intake or a verified self-destruct
+   (`file-self-destruct.md`) before you return; for a permanent user file
+   (for example a project environment file), leave it in place, fail that
+   package, and report the path by name. Never arm a wipe on a permanent file
+   the user did not ask to expire. Refuse any path that matches a secret
+   pattern: a secret directory, an SSH
    directory, environment files, key, certificate, keystore or
    credentials-looking names, and every symbolic link. Then scan the file
    content before the copy, with the secret patterns of `tenth-man.md`
@@ -148,9 +155,11 @@ A local script makes the workflow repeatable. Its shape is illustrative:
   "<absolute path to file or directory>" ...
 ```
 
-The script should require `--generated-by`, refuse secret patterns and
-symbolic links, set private permissions on the package, write both manifests,
-and exit non-zero on any copy or hash failure.
+The script should require `--generated-by`, refuse secret name patterns and
+symbolic links, scan every file's content with the `tenth-man.md` secret
+patterns, exit non-zero when a scan hits or cannot run, set private permissions
+on the package, write both manifests, and exit non-zero on any copy or hash
+failure.
 
 ## Cleanup
 
@@ -165,8 +174,9 @@ harness to clean.
   lived in a scratch path, worktree or untracked folder. Fix: preserve before the
   final reply.
 - **Preservation copied something unsafe.** Cause: the path was a secret, a
-  credential dump or a symbolic link. Fix: refuse the path; preserve a sanitized
-  artifact.
+  credential dump or a symbolic link. Fix: refuse the path and follow Workflow
+  step 3. Preserve a redacted copy only when the redacted bytes are what the
+  reply cites.
 - **The package cannot be trusted later.** Cause: no manifest, no hash, no
   provenance. Fix: generate both manifests every time.
 - **Bulky evidence filled the system disk.** Cause: the work volume was missing
@@ -193,9 +203,13 @@ harness to clean.
 3. Include an environment file in the input list. Confirm it is refused. Then
    include a log with an ordinary name that contains a private key block and a
    token. Confirm the raw file is refused, and that disabling the scanner
-   fails the preserve.
-4. Include a symbolic link, and a directory that contains an environment file
-   and a symbolic link. Confirm that each is refused or excluded and listed.
+   fails the preserve. Confirm that no success is reported while the raw log
+   remains, and that the log ends either intaken or wiped by a verified
+   self-destruct.
+4. Include a symbolic link. Confirm it is refused. Then include a directory
+   that contains a symbolic link and an environment file. Confirm the link is
+   excluded and listed by name, that the environment file fails the package (it
+   stays in place and its path is reported), and that no success is reported.
 5. Unmount or rename the work volume and request a screenshot set. Confirm the
    agent stops and reports it, and writes nothing to the system disk.
 6. Delete the original temp directory. Confirm the vault copy still opens.

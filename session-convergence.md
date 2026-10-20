@@ -101,6 +101,9 @@ resume condition. Do not label work concluded merely because it was handed off.
 
 ## True Human Gates
 
+This is the **canonical true-human-gate list**. Other specs in this repository
+point here instead of repeating it.
+
 The operator gives standing authority for all non-production actions. Operator
 approval stays only for:
 
@@ -115,7 +118,14 @@ approval stays only for:
   privately);
 - account ownership, role, permission or recovery changes;
 - irreversible deletes and other irreversible data changes;
-- physical-world actions.
+- physical-world actions;
+- authority or personal input outside the standing delegation, such as a
+  product-scope choice only the operator can make.
+
+A project counts as not yet in production only when the operator's
+always-loaded instructions say so. Then every release step except the final
+public submit is an agent step. If production status is not recorded, treat
+the project as in production.
 
 Everything else is a **pseudo gate** and stays with the agents: reversible or
 internal steps, internal test builds, draft saves, console uploads, check

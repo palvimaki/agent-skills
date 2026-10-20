@@ -95,8 +95,9 @@ true-human-gates rule and the feel-pass handoff.
 - Work is not done until it is **durable**. A deliverable that lives only in a
   worktree, a temporary directory or a scratch path is lost later.
 - All iteration is bounded, and nothing fails silently.
-- Production deploys, store releases and the final public submit stay with the
-  operator. Everything non-production is under standing authority.
+- Operator approval stays for the true human gates in `session-convergence.md`
+  (True Human Gates). Production deploys, store releases and the final public
+  submit are among them. The other gates apply in every project.
 - Redact secrets and identifying local details from anything durably written.
 
 ## Pipeline Overview
@@ -334,8 +335,9 @@ Steps:
 4. **Re-spec.** The triage route writes ONE batched fix spec with the expected
    post-fix behaviour per finding. The sweep worker does not write the spec.
 5. **Iterate.** Implement, review, then re-sweep the new build: the affected
-   flows plus, for a production patch, every critical journey. At most 3 sweep
-   iterations. Only a `PASS` from a run on the final head counts for the merge.
+   flows, then, for a production patch, every critical journey and the full
+   app sweep with a coverage summary. At most 3 sweep iterations. Only that
+   full-scope run on the final head gives the merge `PASS`.
 6. **Green = `VERDICT: PASS`** on the exact build. Review GO, passing required
    checks and a sweep pass together make a **tested build**.
 
@@ -356,7 +358,7 @@ build, the screenshot trail and a one-paragraph "what to feel-test" note.
 The orchestrator merges its own PR autonomously under the **canonical merge
 checklist** in `tenth-man.md` (After the Verdict: Merge). Implement that
 checklist itself, not this summary: a fresh `GO` on every required axis,
-including the security axis; every started seat finished with no P0/P1; required checks, branch protection, a sweep pass bound
+including the security axis; every declared peer seat finished or was skipped with a recorded reason, with no P0/P1; required checks, branch protection, a sweep pass bound
 to the artifact and a clean revision, the gate-weakening record, the recorded
 fail-closed deploy-workflow check, and the `--match-head-commit` head guard.
 This pipeline adds one condition: where the work has `operator-feel` scope, a
@@ -370,25 +372,16 @@ change on the development target is not released.
 
 ## Authority and Gates
 
-The operator gives standing authority for all non-production actions. Operator
-approval stays only for these true human gates:
-
-- production-changing actions: production deploys and store releases;
-- the final public submit (for example a store "submit for review");
-- final payments and other real-money actions;
-- legal acceptance;
-- credentials and 2FA, which the operator types privately;
-- account ownership, role and recovery changes;
-- irreversible deletes;
-- physical-world actions.
-
-For a project not yet in production, every release step except the final public
-submit is autonomous: builds, internal and closed test uploads, draft saves.
+Operator approval stays only for the true human gates in the canonical list in
+`session-convergence.md` (True Human Gates), including its rule for projects not
+yet in production. Do not keep a copy of that list here.
 
 A reversible or internal step is never an operator blocker: an internal test
 build, a console upload, a draft save, a check re-run, a routine fix, an
 eligible merge. When an agent cannot do such a step, it escalates through agent
-routes first: its own computer use or browser extension, then a dedicated
+routes first: its own computer use or browser extension, only in an isolated
+profile or session that cannot reach the operator's privileged accounts, then a
+dedicated
 computer-use agent on an isolated profile or separate host (the operator's
 logged-in session only under `operator-browser-session.md`), then a frontier
 route with a different supported method.

@@ -155,7 +155,8 @@ reflex:
   `systemd-run --user --on-active=10m <wipe helper> <job id>`, where the helper
   applies Path Safety and the teardown order, or `at` with the same helper if
   `atd` is enabled. Never schedule a bare `rm -f <path>`. If the helper's wipe
-  fails, the helper arms a new timer before it exits.
+  fails, it registers and verifies a replacement timer before it exits (see
+  Path Safety).
 - **Portable fallback** — a detached background process (`setsid` / `nohup` that
   sleeps, then runs the same wipe helper). It does not survive a reboot, and a
   reboot leaves the secret on disk with nothing armed. Use it only when no
@@ -189,6 +190,11 @@ second, deregister last.
    leaf symbolic link, and a path that already exists. Create the file with
    exclusive no-follow creation (for example `O_CREAT|O_EXCL|O_NOFOLLOW`, mode
    `0600`, umask `077`). Record its device and inode from the open descriptor.
+   For an existing transient file (an import, or a scratch file that another
+   skill hands over), do not create it. Open it with `O_NOFOLLOW`, refuse a
+   file that is not a regular file and any path the checks above refuse, set
+   mode `0600` through the descriptor, and record device and inode from that
+   descriptor.
 3. Compute the fire time = now + TTL.
 4. Generate a uniquely-named one-shot job that deletes exactly that path at the
    fire time and then self-cleans per the teardown ordering above.
@@ -231,13 +237,20 @@ Every check works on the resolved path, not on the string the caller gives:
 - Record the file's device and inode when the job is armed.
 - At wipe time, open the target without following links (for example
   `O_NOFOLLOW`). Check that the open descriptor has the recorded device and
-  inode, and a link count of 1. If any check fails, refuse and report.
-- Overwrite through that open descriptor only. Then unlink the directory entry
-  only while it still names the same inode.
-- If the target path is absent at wipe time, report it, then remove the job.
-- If the overwrite or unlink does not finish, keep the job armed (or re-arm
-  it) and report the failure. The job removes itself only after a verified
-  wipe.
+  inode. A different inode, a leaf symbolic link or an untrusted parent link
+  means refuse, leave the foreign file byte-identical, and report.
+- When the descriptor matches the recorded device and inode, overwrite through
+  that descriptor, also when the link count is above 1: the bytes of every
+  name are the same secret. Then unlink only the armed directory entry, and
+  only while it still names that inode. Report any other links by path when
+  they can be found, or by count.
+- A missing path at wipe time is a failed wipe, not a success. Keep the job
+  armed and report it. Remove the job only after a verified overwrite of the
+  recorded inode and a verified unlink.
+- The wipe helper exits only after a verified wipe or a verified re-arm: if a
+  wipe fails, it registers a replacement job, checks that the scheduler lists
+  it, retries in-process if that check fails, and writes a failure record.
+  The job removes itself only after a verified wipe.
 
 ## What NOT to Do
 
@@ -286,19 +299,29 @@ Deterministic and offline:
   deregistered.
 
 Also assert that the helper refuses, before it writes any byte, a path inside
-the managed store, a path on a fixture canary allowlist, and an existing file.
-Each fixture stays byte-identical.
+the managed store, a path on a fixture canary allowlist, and an existing file
+passed to the create helper. Each fixture stays byte-identical. Then arm an
+existing transient fixture through the import path and assert that it is wiped
+at the fire time.
 
 Registration-failure fixture: a stub scheduler that rejects the job. Assert
 that the file is gone and the failure is reported.
 
-Path-attack fixtures. Each case must refuse the wipe, leave the foreign target
-byte-identical, and keep the job armed and reported:
+Path-attack fixtures. Unless a case says otherwise, each case must refuse the
+wipe, leave the foreign target byte-identical, and keep the job armed and
+reported:
 
 - the target is a symbolic link to a foreign file;
 - a parent directory is a symbolic link outside the trusted prefixes;
 - the target is replaced by a different inode between arm and wipe;
-- the target has a second hard link (link count 2).
+- the target has a second hard link (link count 2): here the expected result
+  differs. Assert that the shared inode is overwritten, the armed name is
+  unlinked, the second link is reported, and the job is removed only after
+  that verified wipe;
+- the target path is missing at wipe time: assert the job stays armed and the
+  failure is reported;
+- the replacement job cannot be registered: assert the helper retries and
+  writes a failure record, and does not exit silently.
 
 Intake fixture: a file with two secrets where the user asks to store one.
 Assert that the original is kept, no wipe is armed, and the report names the

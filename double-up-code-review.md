@@ -6,8 +6,9 @@ repository-agnostic.
 
 Double-Up runs the standard merge gate unchanged, then adds one more
 independent reviewer as an **advisory** voice. The extra reviewer widens
-coverage. It never approves a merge, and it never blocks a merge on its own
-authority.
+coverage. It never approves a merge. Its P0/P1 findings block until the owner
+confirms them as defects or a fresh non-author ladder reviewer agrees to
+dismiss them.
 
 > **Doctrine version: 2026-10-20.** The standard gate is now the ordered review
 > ladder in `tenth-man.md`: one fresh reviewer per seat and round, parseable verdict
@@ -65,7 +66,7 @@ two experts, use `expert-code-review-panel.md`.
 | --- | --- | --- |
 | Correctness or combined review | ladder round (`tenth-man.md`) | Yes, on P0/P1 |
 | Security-axis review | security ladder, where the profile has one | Yes, on P0/P1 |
-| Advisory review | this skill | No; owner triage decides |
+| Advisory review | this skill | Yes, until triage resolves it: a confirmed P0/P1 blocks, and an unconfirmed P0/P1 blocks until a fresh non-author ladder reviewer agrees to dismiss it |
 
 Two kinds of advisory reviewer:
 
@@ -116,9 +117,10 @@ One combined review:
   round, with any confirmed advisory P0/P1 applied;
 - base, head and head SHA;
 - the gate verdict and findings, per axis, each in its own list;
-- the advisory verdict and findings, marked non-blocking;
-- the triage line for each advisory P0/P1: confirmed (fix required) or not
-  confirmed (follow-up, with reason);
+- the advisory verdict and findings;
+- the triage line for each advisory P0/P1: confirmed (fix required); not
+  confirmed, with the dismissing ladder reviewer's route, head SHA and reason
+  (follow-up); or pending dismissal review (`BLOCKED`);
 - recorded P2/P3 follow-ups;
 - limitations: skipped or failed advisory route, sensitive-data skips;
 - provenance: ISO 8601 timestamp, routes, models and effort.
@@ -139,13 +141,16 @@ One combined review:
    as a failing test, a reproduced path or a cited line, or send it to that
    fresh ladder reviewer with the reason the owner thinks it is not real.
 8. Set the gate status:
-   - `BLOCKED` when the ladder returned NOGO on any axis, or when triage
-     confirmed an advisory P0/P1;
+   - `BLOCKED` when the ladder returned NOGO on any axis; when triage
+     confirmed an advisory P0/P1; or when an advisory P0/P1 that the owner
+     wants to dismiss has no recorded agreement from a fresh non-author ladder
+     reviewer (a missing verdict, a timeout or a skipped dismissal review stays
+     `BLOCKED`);
    - `NO VERDICT` when the ladder round has no verdict;
-   - `APPROVED` when the ladder returned `GO` on every required axis, with no
-     ladder P0/P1, and every advisory P0/P1 has a disposition: confirmed (then
-     the status is `BLOCKED`) or not confirmed and recorded with a reason. An
-     unconfirmed advisory finding never leaves the status undefined.
+   - `APPROVED` only when the ladder returned `GO` on every required axis, with
+     no ladder P0/P1, and every advisory P0/P1 was dismissed with a recorded
+     agreement from a fresh non-author ladder reviewer. Every status is
+     defined; none is left open.
 9. Write or post the combined review. Record P2/P3 follow-ups with an owner.
 10. After a fix, start again at step 1 with the new head. Add every confirmed
     advisory P0/P1 to the prior blocking findings of the next ladder round, so
@@ -219,7 +224,7 @@ VERDICT: <GO | NOGO>  Route: <rung used>  Procedural failures: <list or none>
 VERDICT: <GO | NOGO>  Route: <rung used>
 <findings>
 
-### Advisory (non-blocking)
+### Advisory
 VERDICT: <GO | NOGO | none>  Route: <route>
 <findings, each P0/P1 marked CONFIRMED or NOT CONFIRMED with the reason>
 

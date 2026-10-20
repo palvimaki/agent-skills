@@ -186,8 +186,10 @@ Reserving the frontier model must not mean less review.
   the ladder is exhausted. The gate blocks and the PR waits.
 - **Advisory extras.** A same-session review by a different model family inside
   the harness is useful extra evidence. When the frontier reserve is already the
-  orchestrator, its own read of the final diff is also additive. Neither is a
-  merge gate.
+  orchestrator, its own read of the final diff is also additive. Neither
+  approves a merge. A P0/P1 from either one follows the dismissal rule in
+  `double-up-code-review.md`: it blocks until the owner confirms and fixes it,
+  or until a fresh non-author ladder reviewer agrees to dismiss it.
 - **Time limits.** Each review stage has a deadline.
 
 See `tenth-man.md` and `double-up-code-review.md` in this repository for the

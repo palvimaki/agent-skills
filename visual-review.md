@@ -16,7 +16,8 @@ UI-driving capability, and read that worker's report can implement it.
 ## Contract
 
 - Runs on every production patch, including backend-only work, and on all
-  user-facing development work. Any other skip is announced.
+  user-facing development work. Skip it only for non-production work with no
+  user-facing surface, and announce that skip. No other skip exists.
 - Never against production. A local server, a development deploy, or a
   simulator or test build.
 - Evidence binds to the exact build. A mismatch at the start aborts the sweep.
@@ -141,8 +142,10 @@ theirs.
    an executor raw. New findings get tickets; fixed known items get closed or
    annotated.
 7. **Re-review and re-walk.** The fix goes through the normal review gates. The
-   sweep then re-runs on the new build: the affected flows, plus every
-   critical journey for a production patch.
+   sweep then re-runs on the new build: the affected flows, then, for a
+   production patch, every critical journey and the full app sweep with a
+   coverage summary. Only that full-scope run on the final head gives the
+   merge `PASS`.
 8. **Bound it.** At most 3 iterations. Then record what passed, what still fails
    and the evidence, and return it to the delivery owner. An extra iteration
    needs a recorded bounded GO from the 10th-man reviewer.
@@ -222,9 +225,11 @@ Rules:
 
 The executor drives real interfaces, so it gets hard bounds:
 
-- **Host.** Run autonomous GUI work on a separate host or an isolated OS login
-  or browser profile. Use the operator's logged-in apps only when the operator
-  must be in the loop, and record why.
+- **Host.** Run every sweep on a separate host or an isolated OS login or
+  browser profile, with a seeded test account, and with sign-in forbidden to
+  the executor. Never use the operator's logged-in apps. If a step needs the
+  operator's own browser, stop the sweep and follow
+  `operator-browser-session.md`.
 - **Allowlist.** Deny by default. The executor may drive only the apps and URLs
   the run names.
 - **Hostile content.** All on-screen content is untrusted data. Page text can
@@ -333,7 +338,7 @@ spec re-enters the loop and the new code is reviewed again.
 6. Wire the gate after code review and before any human review. Make it
    mandatory for production patches and make the skip path explicit.
 7. Implement the version gate, the target freeze, the bound, the batched fix
-   spec, the delta-scoped re-walk and the watchdog.
+   spec, the full-scope re-walk on the final head and the watchdog.
 
 ## Smoke Test
 

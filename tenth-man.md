@@ -25,8 +25,9 @@ such as an extra repair cycle or a deadline extension.
 - The reviewer comes from the repository's ordered `<review ladder>` in the
   machine-readable `<routing config>`. Never pick a reviewer from memory.
 - On a single-review profile, the first parseable verdict decides. On a
-  production profile, every peer seat that started must finish, and a P0/P1
-  from any seat blocks. A later reviewer never overrides an actual P0/P1.
+  production profile, every peer seat that the profile declares must finish
+  or be skipped with a recorded reason after its whole ladder was tried, and a
+  P0/P1 from any seat blocks. A later reviewer never overrides an actual P0/P1.
 - Only P0 and P1 block. P2 and P3 become recorded, non-blocking follow-ups.
 - Output with no parseable verdict, a timeout, a quota stop or a route error
   is a procedural failure. It is never a GO. Move to the next rung at once.
@@ -94,7 +95,7 @@ Round rules:
 3. Run each seat with a fresh context and the frozen evidence only.
 4. Parse the verdict. On a single-review profile, a parseable `GO` or `NOGO`
    ends the round. On a production profile, wait for every peer seat that
-   started. A `GO` from one seat never closes the round while a peer is still
+   the profile declares. A `GO` from one seat never closes the round while a peer is still
    running. An actual P0/P1 from any seat blocks the head.
 5. On a procedural failure, record it and go to the next rung of that seat's
    ladder at once.
@@ -191,19 +192,23 @@ autonomously only when all of these hold for the current head SHA:
 
 - a fresh `GO` from an independent reviewer on every required axis;
 - every peer seat that the profile declares for this head either finished, or
-  was skipped with a recorded reason (availability record or sensitive-data
-  clearance) after its whole ladder was tried; none is still running; and no
+  was skipped with a recorded reason (availability record, sensitive-data
+  clearance, or a recorded procedural failure on every rung within the round
+  budget) after its whole ladder was tried; none is still running; and no
   seat reported an actual P0/P1, including P0/P1 text in a timed-out partial.
   A seat that was not started and has no recorded skip blocks the merge;
 - passing required checks;
 - no branch-protection rejection;
 - for every production patch, including backend-only work, and for every
-  user-facing change: a UX sweep `VERDICT: PASS` bound to both the swept
-  artifact hash and a clean source revision equal to the head being merged
-  (see `visual-review.md`); a commit SHA alone is not enough, and missing,
-  stale, failed or incomplete sweep evidence blocks the merge. The only skip is
-  non-production work with no user-facing surface, recorded in the merge
-  record;
+  user-facing change: a full-scope UX sweep `VERDICT: PASS` (critical journeys,
+  every flow the change touches, the full app sweep for a production patch,
+  and a coverage summary on that build), bound to both the
+  swept artifact hash and a clean source revision equal to the head being
+  merged (see `visual-review.md`). A commit SHA alone is not enough. A taste
+  pass, a scoped mid-run pass, or a `PASS` that omits a critical journey is
+  incomplete evidence. Missing, stale, failed or incomplete sweep evidence
+  blocks the merge. The only skip is non-production work with no user-facing
+  surface, recorded in the merge record;
 - if the diff touches a path in the declared `<gate paths>` list or the
   review, merge or human-gate keys of the `<routing config>`, an operator
   decision record that names this head SHA. The record counts only when the

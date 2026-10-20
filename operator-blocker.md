@@ -49,22 +49,9 @@ holds one, or when the operator says "let's go through the blockers".
 
 ## What Counts as a Blocker
 
-The operator gives standing authority for all non-production actions. A
-blocker is one of these **true human gates**:
-
-- a production-changing action: a production deploy or a store release;
-- the final public submit, for example a store "submit for review";
-- a final payment, purchase or other real-money action;
-- legal acceptance of terms or agreements, consent, or an OAuth, SSO or
-  third-party access grant;
-- creating, rotating, revoking or exporting a credential, API key or token, or
-  a change to two-step or security settings;
-- entering credentials, passwords, passkeys or 2FA codes;
-- an account ownership, role, permission or recovery change;
-- an irreversible delete or data change;
-- a physical-world action, such as a field test or unlocking a physical device;
-- authority or personal input outside the standing delegation, such as a
-  product-scope choice only the operator can make.
+A blocker is a **true human gate** from the canonical list in
+`session-convergence.md` (True Human Gates). Use that list; do not keep a copy
+here.
 
 These are **never** blockers. The agent does them and says so in one line:
 

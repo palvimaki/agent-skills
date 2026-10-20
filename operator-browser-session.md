@@ -212,8 +212,10 @@ sign-in.
 Two kinds of failure end a run, and they go different ways:
 
 - **Safety-bound failure** (no enforcement control and no attending operator,
-  an off-list URL, a credential or 2FA step, a consent or payment dialog, an
-  unexpected privileged change, a page instruction): terminal for agents.
+  an off-list URL, a credential, 2FA, consent or payment step that the task
+  file does not list as an operator-only step or that appears when capture
+  cannot be turned off, an unexpected privileged change, a page instruction):
+  terminal for agents. A listed operator-only step is a pause, not a failure.
   Record the page, the control and the failed bound. Hand the step to the
   operator with that record, or stop. No other agent route retries it.
 - **Capability failure** that did not touch the privileged session (a tool
