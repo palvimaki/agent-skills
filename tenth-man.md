@@ -77,8 +77,10 @@ rung names a route, its effort and its stage time limit. Typical profiles:
 - **Production profile.** Apps that real users touch, and external
   repositories. Each round has one frontier-tier correctness review and, when
   available, one secondary review from a different route. A secondary
-  procedural failure leaves the frontier verdict in charge. An actual P0/P1
-  from either reviewer blocks. A separate security-axis review always runs.
+  procedural failure tries the next declared secondary rung. The frontier
+  verdict stands alone only after the secondary ladder is exhausted, and only
+  when no seat reported a P0/P1, including P0/P1 text in a timed-out partial.
+  An actual P0/P1 from either reviewer blocks. A separate security-axis review always runs.
 - **Other repositories.** Use the default ladder with the same blocking rule
   until the operator assigns a profile.
 
@@ -144,11 +146,18 @@ vendor reputation.
 
 - `VERDICT: NOGO` means at least one actual P0 or P1 finding.
 - `VERDICT: GO` means no P0/P1 under the stated scope.
+- Parse the finding list together with the verdict line. A P0 or P1 in the
+  findings forces `NOGO`. A `GO` line next to a listed P0/P1 is a
+  contradictory result: treat it as a procedural failure and go to the next
+  rung.
 - P2/P3 findings never block. The owner records them as follow-ups, with an
   owner, in one PR comment or one issue.
-- A repair round checks two things only: are the earlier blocking findings
-  fixed, and does the repair delta add a P0 or P1. A new finding on code that
-  the repair did not change is a non-blocking follow-up.
+- A repair round must check two things: are the earlier blocking findings
+  fixed, and does the repair delta add a P0 or P1. This narrows what the
+  reviewer must re-read, not what blocks. A new P0/P1 anywhere in the tree,
+  including unchanged code, still blocks. Only new P2/P3 findings on unchanged
+  code become follow-ups. The narrowed scope applies to every seat, including
+  the security seat, under the same rule.
 - The repair is a new head, so it gets a new round from the top of the ladder.
 - The default repair allowance comes from the task. More repair cycles need a
   routine process exception (below).
@@ -189,9 +198,12 @@ Rules:
 
 - Merge with a fail-closed head guard, for example
   `gh pr merge <N> --match-head-commit <sha>`. Never use an admin bypass.
-- Before the merge, read the target branch's deploy workflows. A merge that
-  starts a production deploy or a store release is a publish step. It needs the
-  operator's approval.
+- Before the merge, read the target branch's deploy workflows and record the
+  result. Merge autonomously only when that recorded check shows the base
+  branch cannot start a production deploy or a store release. A merge that can
+  start one is a publish step and needs the operator's approval. A missing,
+  unreadable or uncertain check (an external deploy trigger, a workflow you do
+  not recognize) stops the merge and becomes an operator decision.
 - A PR that weakens a review, merge or human gate needs its own operator
   decision record. Detect it by path and key, as in the list above, not by the
   author's description. A reviewer `GO` never replaces the record.
@@ -354,8 +366,9 @@ Rules:
 - Start with exactly one line: VERDICT: GO or VERDICT: NOGO.
 - Use P0/P1/P2/P3. Only P0/P1 block. NOGO requires at least one P0/P1.
 - If GO, state that there are no P0/P1 findings under the stated scope.
-- In a repair round, check only that the prior blocking findings are fixed and
-  that the repair delta adds no P0/P1. Mark other findings as follow-ups.
+- In a repair round, first check that the prior blocking findings are fixed and
+  that the repair delta adds no P0/P1. Report any other P0/P1 you see as
+  blocking. Mark other P2/P3 findings as follow-ups.
 - For each finding, give evidence, impact and required remediation.
 - Separate confirmed evidence from inference.
 - Do not praise. Do not summarize before findings. Do not edit files.
@@ -441,7 +454,10 @@ Use a temporary repository or a synthetic plan with no private data.
 1. Review a change with an obvious P1. Confirm `VERDICT: NOGO` with evidence,
    impact and remediation.
 2. Fix it. Confirm the repair round checks the old finding and the delta, and
-   that a new P3 on unchanged code is a follow-up, not a block.
+   that a new P3 on unchanged code is a follow-up, not a block, and that a new
+   P1 on unchanged code still blocks. Then make a reviewer print
+   `VERDICT: GO` above a listed P1. Confirm a procedural failure and a move
+   to the next rung, never a merge.
 3. Return only P2/P3 findings. Confirm `VERDICT: GO` and recorded follow-ups.
 4. Make the first rung return text with no verdict line. Confirm a procedural
    failure and an immediate move to the next rung, never a GO.

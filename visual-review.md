@@ -109,9 +109,10 @@ theirs.
 1. **Make it runnable.** Local server, development deploy or test build; never
    production. Capture the exact entry point and apply the strip rule (see
    Redaction) before storing or quoting it.
-2. **Version gate, both ends.** Before the walk, read the build identity from a
-   health endpoint or in-app version label and compare it with the expected
-   commit. On mismatch, abort with `VERDICT: ABORTED — wrong build`. Read it
+2. **Version gate, both ends.** Bind the sweep to the artifact identity that
+   the launcher records at process start (the build artifact hash or the
+   commit it was built from). Require the health endpoint or in-app version
+   label to match that record and the expected commit. On mismatch, abort with `VERDICT: ABORTED — wrong build`. Read it
    again at the end. A mid-sweep change marks earlier findings RE-VERIFY.
 3. **Freeze the target.** While a sweep runs, hold merges and deploys to the
    swept branch. Any new commit on the swept branch invalidates the pass. Accept
@@ -170,7 +171,8 @@ Go beyond the happy path:
 - switch to the second pre-authenticated profile and back, reload, and check
   that saved state survives (never type a credential; if a sign-in dialog
   appears, stop and report it);
-- go offline and online again, and check that data stays correct;
+- switch the app or browser under test to offline mode and back (never change
+  the host network), and check that data stays correct;
 - repeat actions where state could pile up.
 
 Check both themes, a narrow viewport and each shipped locale where the product

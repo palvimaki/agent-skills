@@ -103,8 +103,10 @@ README, and its license.
   and bulk refactors. A rollout tool must list it as an explicit exclusion.
 - Run the identifying-info scan on every commit to the public repository,
   whatever the commit's purpose. A fix to a typo can still carry a path.
-- If private material reaches the public repository, treat it as an incident:
-  stop, remove it from the branch, and plan a history rewrite. Pull request
+- If private material reaches the public repository, treat it as an incident.
+  If it contains a secret, token, key or credential, treat that value as
+  compromised first: revoke it, rotate it, and record the revocation. Only then
+  remove it from the branch and plan a history rewrite. Pull request
   refs on a hosted forge can outlive a force-push, so removal may need the
   forge's support process. Prevention is far cheaper than this purge.
 

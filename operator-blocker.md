@@ -17,8 +17,9 @@ filter on what counts as a blocker.
 
 - Only a **true human gate** is a blocker. Everything reversible or internal,
   the agent does itself.
-- Before asking, the agent escalates an undoable reversible step through other
-  agent routes. The operator is the last route, not the first.
+- When the agent cannot complete an authorized reversible step, it escalates
+  through other agent routes before it asks the operator. It stops at a true
+  human gate. The operator is the last route, not the first.
 - Routine process exceptions (extra repair cycles, deadline extensions) go to an
   independent 10th-man reviewer, never to the operator.
 - Probe first. Every card carries labelled evidence of the current state.
@@ -112,7 +113,9 @@ question one at a time, in words that carry their own context.
 ### Step 0 — Filter, escalate, probe
 
 1. Drop every item that is not a true human gate. Do those items.
-2. Escalate every undoable reversible step through the agent routes above.
+2. Escalate every authorized reversible step that the agent could not complete
+   through the agent routes above. Never escalate a true human gate to another
+   agent.
 3. For each remaining gate, run the cheapest safe probe of its current state: a
    status call, the tracker history, git state, the work record. A decision the
    agents or the operator already executed is not a decision.

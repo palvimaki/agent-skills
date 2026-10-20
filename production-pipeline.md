@@ -385,9 +385,11 @@ part of the task. Stop and record the blocker when a required check fails, a
 review requests changes, branch protection rejects the SHA, or checks stay
 pending past the deadline.
 
-Before the merge, read the target branch's deploy workflows. A merge that starts
-a production deploy or a store release is a **publish step**: it needs the
-operator. A PR that weakens a review, merge or operator gate needs its own
+Before the merge, read the target branch's deploy workflows and record the
+result. Merge autonomously only when that check shows the base branch cannot
+start a production deploy or a store release. A merge that can start one is a
+**publish step**: it needs the operator. A missing, unreadable or uncertain
+check stops the merge and becomes an operator decision. A PR that weakens a review, merge or operator gate needs its own
 operator decision record; detect it by path and key, not by the PR
 description, and a missing record blocks the merge.
 

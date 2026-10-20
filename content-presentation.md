@@ -88,7 +88,8 @@ implicitly:
 - a follow-up such as "make a nice page of that", "in the browser", "in my
   editor";
 - an answer the agent is about to give that is a plan, comparison, diagram,
-  table, diff, or report.
+  table, diff, or report, and that the user asked for. Render only the
+  material of that answer, never extra material the user did not ask to see.
 
 ### Routing rule
 
@@ -168,6 +169,9 @@ own design system instead; keep the provenance footer in every case.
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; script-src 'none'">
+<!-- Tighten or extend the policy per page. Allow only the pinned libraries
+     the template names; never inline script built from data. -->
 <title>TITLE HERE</title>
 <style>
   :root {

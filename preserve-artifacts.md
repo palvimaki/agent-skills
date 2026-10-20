@@ -44,8 +44,8 @@ Use this skill when:
   directory, a downloads folder or another path that cleanup could remove;
 - the final reply will cite a local file path.
 
-Do not use it for source files that belong in the repository. Commit or stage
-those through the normal repository workflow.
+Do not use it for source files that belong in the repository. Commit those
+through the normal repository workflow.
 
 ## The Problem This Solves
 
@@ -61,7 +61,7 @@ Choose the most suitable durable location:
 
 | Deliverable | Durable target |
 |---|---|
-| Source, docs or config that belong in the product | Commit or stage in version control |
+| Source, docs or config that belong in the product | Commit in version control, on a branch that outlives the worktree |
 | Small final deliverables for the operator | `<artifact vault>` in a durable documents folder |
 | Bulky evidence: builds, logs, screenshots, recordings | `<work volume>/<evidence area>` |
 | Sensitive material | The approved `<secret store>`, never the vault |
@@ -121,8 +121,9 @@ evidence, not decoration.
 
 For each generated deliverable, the final reply includes exactly one of:
 
-- a committed or staged repository path, with status output that shows it is
-  not stranded;
+- a repository path whose blob is in a commit on a branch that remains after
+  worktree removal (a staged file is not durable; until that commit exists,
+  preserve a vault copy and cite the vault path);
 - a durable vault or work-volume path plus its `MANIFEST.md`;
 - a clear statement that the task produced no local file.
 

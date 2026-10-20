@@ -138,7 +138,8 @@ One combined review:
    - `BLOCKED` when the ladder returned NOGO on any axis, or when triage
      confirmed an advisory P0/P1;
    - `NO VERDICT` when the ladder round has no verdict;
-   - `APPROVED` otherwise.
+   - `APPROVED` only when every required axis has a `GO` and no finding list
+     on any axis contains a P0 or P1.
 9. Write or post the combined review. Record P2/P3 follow-ups with an owner.
 10. After a fix, start again at step 1 with the new head. Run Double-Up again
     only if the risk reason still applies.
