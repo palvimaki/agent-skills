@@ -89,8 +89,9 @@ the phone in one walk.
 
 ### Phase 1 — Plan (vector, not raster)
 
-1. Register all scans to one frame (choose +X = main facade). Fit the roof planes
-   once (`z = a + b*x` per slope, ridge line).
+1. Register all scans to one frame (choose +X = main facade). Fit each roof or
+   sloped-ceiling plane once as `z = a + b*x + c*y`, and record the lines where
+   planes meet (ridge, hips, valleys).
 2. Extract RoomPlan wall lines and object boxes; slice the LiDAR mesh at several
    heights (furniture height and just under the ceiling).
 3. Author `plan.json`: per floor an **outline**; **rooms** as rectangles of inner
@@ -101,12 +102,22 @@ the phone in one walk.
 4. Check the plan on an overlay image (scan slices + RoomPlan walls + rooms)
    before building anything.
 
+**Supported geometry.** The cell-stack builder below covers walls on two
+perpendicular axes (most apartments and houses), flat ceilings and any number of
+planar roof slopes. At intake, list walls that are diagonal or curved. Handle
+them explicitly: either rotate the grid locally (cells in a second frame for
+that wing) or model those walls as separate extruded wall pieces that cut the
+neighbouring cells. Do not silently snap them to the axes.
+
 ### Phase 2 — Shell (cell stacks)
 
-Collect every rectangle edge into grid lines (add the ridge and the x where each
-roof plane crosses each key height). Every grid cell gets a stack of **air
-intervals**: ground room `[0, ceiling]` or `[0, roof]`, door `[0, head]`, window
-`[sill, head]`, upper-floor room `[floor, roof]`; solids subtract. Emit:
+Collect every rectangle edge into grid lines (add the plane intersection lines
+and the lines where each roof plane crosses each key height, so no comparison
+between a roof plane and a fixed height changes sign inside a cell). Every grid
+cell gets a stack of **air intervals** in absolute heights. Opening heights in
+the plan are local to their storey floor `F` (0 for the ground floor):
+room `[F, F + ceiling]` or `[F, roof]`, door `[F, F + head]`, window
+`[F + sill, F + head]`; solids subtract. Emit:
 
 - a floor quad at the bottom and a ceiling or exact roof quad at the top of each
   air interval;
@@ -215,6 +226,10 @@ cheaper workers for asset modelling and catalogue reading.
 
 - A two-room test plan with one door and one window builds a closed shell with no
   gaps, straight edges, a header over the door and reveals in the window.
+- An upper-floor test room on a floor at 3 m with a 2 m doorway: the opening spans
+  3–5 m, and its header sits at 5 m.
+- A sloped-roof fixture with one slope along x and one along y: the ceiling quads
+  match both planes, and the line where they meet is one straight edge.
 - A walker can pass the door; a walk into a wall triggers the stuck hint; the
   rescue key works.
 - A test catalogue with three sofas cycles in place; the narrowest keeps the
