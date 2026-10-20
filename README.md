@@ -24,7 +24,7 @@ runs on subscriptions, and one machine-readable routing config is the source of
 truth. Every PR gets one fresh, independent reviewer per round from an ordered
 ladder, bound to the exact head SHA; only P0/P1 findings block, and production
 code also gets a separate security axis. The orchestrator then merges its own PR
-behind a fail-closed head guard. The operator is asked only at true human gates — the
+behind a fail-closed guard on both base and head SHAs. The operator is asked only at true human gates — the
 canonical list in `session-convergence.md` (production releases, the final
 public submit, payments, credentials, legal and consent grants, account
 changes, irreversible deletes, physical-world actions) — and every session ends with

@@ -71,8 +71,12 @@ One rule decides what happens to a refused secret file:
   path. Never arm a wipe on a permanent file unless the user separately and
   explicitly asks for that file to expire (`file-self-destruct.md`).
 - A **transient** file is a scratch file that this task created inside the
-  `<transient root>` of `file-self-destruct.md`. Import it there, then shred it
-  in place with "destroy now", with verification, before the skill returns. A
+  `<transient root>` of `file-self-destruct.md`. Import it there and bind it with
+  the `file-self-destruct.md` bind sequence (creation cookie on an
+  `O_NOFOLLOW` descriptor), then shred it in place with "destroy now", with
+  verification, before the skill returns. A missing cookie means refuse and
+  report. If the shred fails, arm a wipe for it through the
+  `file-self-destruct.md` import path and report the failure. A
   task-created scratch file outside that root counts as permanent. Intake into
   the managed store happens only when the operator asked to store that value.
 
@@ -130,8 +134,11 @@ evidence, not decoration.
    excluded member by name in the manifest is allowed only for non-secret
    refusals (for example a symbolic link). On a secret or credential hit, do
    not report success while the raw file remains: for a transient scratch
-   file, shred it in place with verification (`file-self-destruct.md`,
-   "destroy now") before you return, and call intake only when the operator
+   file, bind it with the `file-self-destruct.md` bind sequence (creation
+   cookie on an `O_NOFOLLOW` descriptor; a missing cookie means refuse and
+   report), then shred it in place with verification ("destroy now") before
+   you return; if the shred fails, arm a wipe for it through the
+   `file-self-destruct.md` import path and report the failure; and call intake only when the operator
    asked to store that value; for a permanent user file
    (for example a project environment file), leave it in place, fail that
    package, and report the path by name. Never arm a wipe on a permanent file

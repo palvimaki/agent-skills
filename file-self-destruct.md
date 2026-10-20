@@ -111,7 +111,11 @@ Secret intake, in principle:
    the unextracted remainder can be destroyed. On a partial extract without
    that confirmation, keep the original, arm no wipe, and report what the
    original still holds (by field name, never by value). Shred by the Path
-   Safety rules below. Refuse to shred a path inside the store or on the
+   Safety rules below, using the bind sequence: open the original with
+   `O_NOFOLLOW`, require a regular file, write a creation cookie on that
+   descriptor, re-check device, inode and cookie immediately before the
+   overwrite, and overwrite and unlink only through that descriptor. A missing
+   cookie means refuse and report. Refuse to shred a path inside the store or on the
    canary allowlist. A failed overwrite leaves the file in place and is
    reported.
 6. Report names, destinations, and loader variables. Never the value.
@@ -159,16 +163,25 @@ reflex:
   privacy / Full-Disk-Access consent prompt, so installing a user crontab can
   surface a permission dialog and, if it is dismissed, the job may **silently
   never fire** — which defeats the entire guarantee this skill exists to provide.
-- **Linux with systemd** — a transient user timer:
-  `systemd-run --user --on-active=10m <wipe helper> <job id>`, where the helper
-  applies Path Safety and the teardown order, or `at` with the same helper if
-  `atd` is enabled. Never schedule a bare `rm -f <path>`. If the helper's wipe
+- **Linux with systemd** — a persistent user timer: a `.timer` and `.service`
+  unit pair written to disk under the user's unit directory, with
+  `OnCalendar=` set to the absolute fire time plus `Persistent=true` (not
+  `OnActiveSec=`, which restarts its countdown after a reboot), and user linger
+  enabled so the timer survives logout and reboot. A transient
+  `systemd-run --user` unit is not on disk and dies with the user manager, so
+  do not use it alone. The service runs `<wipe helper> <job id>`, which applies
+  Path Safety and the teardown order. `at` with the same helper is an
+  alternative if `atd` is enabled. Never schedule a bare `rm -f <path>`. If the helper's wipe
   fails, it follows the wipe-helper exit rule in Path Safety.
 - **Portable fallback** — a detached background process (`setsid` / `nohup` that
   sleeps, then runs the same wipe helper). It does not survive a reboot, and a
   reboot leaves the secret on disk with nothing armed. Use it only when no
-  native scheduler exists. Also register a login or boot item that runs the
-  same wipe helper for the recorded path.
+  native scheduler exists.
+
+On every platform, also register a login or boot item that runs the same wipe
+helper in check mode. At boot or login it verifies that the job for the
+recorded path, device, inode and creation cookie is still armed. If it is not,
+it runs the wipe-helper exit rule in Path Safety.
 
 Whatever the user calls it — "cron job", "timed task", "scheduled task" — choose
 the platform-native, promptless, unattended one-shot mechanism, and **verify the
@@ -180,8 +193,9 @@ If the self-destruct job cleans up after itself (recommended), it must act in
 this order:
 
 1. **Delete the target secret file** — the essential action.
-2. **Delete its own scheduling artifacts** (e.g. the launchd plist and any helper
-   script).
+2. **Delete its own scheduling artifacts** (the launchd plist, the systemd
+   `.timer`/`.service` units followed by a user daemon reload, the login or
+   boot check item for this path, and any helper script).
 3. **Deregister / unload itself LAST.**
 
 Deregistering a job often terminates the very process performing the teardown, so
@@ -211,8 +225,10 @@ second, deregister last.
 3. Compute the fire time = now + TTL.
 4. Generate a uniquely-named one-shot job that deletes exactly that path at the
    fire time and then self-cleans per the teardown ordering above.
-5. Register the job with the platform-native scheduler.
-6. Verify the job is registered and the file permissions are correct. If
+5. Register the job with the platform-native scheduler, and register the
+   login or boot check item for this path.
+6. Verify the job and the check item are registered and the file permissions
+   are correct. If
    registration or verification fails for a file this operation created with
    exclusive create, shred it at once through the descriptor from step 2,
    confirm the path is gone, and report the failure. For an import, keep the
@@ -229,8 +245,9 @@ the wipe. Do not print it in the chat.
 
 Two early actions exist. Bind each one to an explicit user request:
 
-- **Cancel the wipe** (keep the file): deregister the job and delete its
-  scheduling artifacts by explicit path. Leave the target file in place, and
+- **Cancel the wipe** (keep the file): deregister the job, remove the login or
+  boot check item for that path, and delete all scheduling artifacts by
+  explicit path. Leave the target file in place, and
   state the residual risk.
 - **Destroy now**: shred the one canonical target at once, by the Path Safety
   rules below, and verify the wipe. Only after that check succeeds,
@@ -342,7 +359,7 @@ An LLM installing this skill on a fresh system should:
    `<transient root>`: one private scratch directory, owner-only, outside any
    repository and any synced folder. The helper refuses every path outside it.
 3. Detect the platform and select the native scheduler (launchd / systemd / `at`
-   / portable fallback) accordingly.
+   / portable fallback) accordingly, and the login or boot check item.
 4. Encode the teardown ordering so fired jobs are traceless.
 5. Pair with the host's secret-intake workflow so permanent secrets go to the
    managed store and only transient files self-destruct. Load the canary
@@ -356,10 +373,14 @@ Deterministic and offline:
 
 - **Input:** a non-secret fixture written via the helper with a 1-minute TTL.
 - **Assert:** the file exists with owner-only permissions, and the one-shot job
-  is registered with the scheduler.
+  and the boot check item are registered.
 - **Wait** past the fire minute.
-- **Assert:** the file is gone, the scheduling artifacts are gone, and the job is
-  deregistered.
+- **Assert:** the file is gone, the scheduling artifacts are gone, and the job
+  and the boot check item are deregistered.
+
+Boot-check fixtures: remove the job but keep the file, then run the check
+item, and assert it applies the wipe-helper exit rule. Cancel a wipe, then run
+the check item, and assert the file is untouched.
 
 Also assert that the helper refuses, before it writes any byte, a path inside
 the managed store, a path on a fixture canary allowlist, and an existing file

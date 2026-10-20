@@ -224,6 +224,13 @@ Before you save an agent-facing document, check:
    harness's output-style setting, because it applies to every reply.
 4. Keep skill-specific mechanics in a disclosed file if your harness supports
    multi-file skills.
+5. Never let this skill write or edit a line that grants or widens authority:
+   production status, standing authority, or the removal of an entry from a
+   gate list or the `<gate paths>` list. Those lines come only from the
+   operator through a channel whose credentials no agent holds (see
+   `session-convergence.md`, True Human Gates); an agent edit to them is
+   inert. Adding a gate or a gate path only narrows authority and is
+   allowed.
 
 ## Smoke Test
 
